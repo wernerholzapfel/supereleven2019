@@ -1,0 +1,4 @@
+{
+  "language": "ts",
+  "entryFile": "src/app/main.ts"
+}
