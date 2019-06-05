@@ -1,5 +1,4 @@
 import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from 'typeorm';
-import {Prediction} from '../prediction/prediction.entity';
 import {RankingPrediction} from '../rankingPredictions/rankingPredictions.entity';
 import {Competition} from '../competitions/competition.entity';
 import {Team} from '../teams/team.entity';
@@ -15,7 +14,7 @@ export class RankingTeam {
     @Column({nullable: true})
     roundId: number;
 
-    @OneToMany(type => RankingPrediction, prediction => prediction.rankingTeam)
+    @OneToMany(type => RankingPrediction, prediction => prediction.team)
     rankingPredictions: RankingPrediction[];
 
     @ManyToOne(type => Competition, competition => competition.predictions)
