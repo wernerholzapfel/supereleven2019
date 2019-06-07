@@ -19,6 +19,7 @@
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
 
+dist
 # Gradle
 .idea/**/gradle.xml
 .idea/**/libraries
