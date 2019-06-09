@@ -35,6 +35,7 @@ export class AppModule {
     configure(consumer: MiddlewareConsumer): void {
 
         consumer.apply(AddFireBaseUserToRequest).forRoutes(
-            {path: '/**', method: RequestMethod.POST});
+            {path: '/**', method: RequestMethod.POST},
+            {path: '/rankingprediction/competitionid/**', method: RequestMethod.GET});
     }
 }

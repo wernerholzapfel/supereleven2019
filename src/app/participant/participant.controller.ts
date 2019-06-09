@@ -20,6 +20,6 @@ export class ParticipantController {
     async create(@Req() req, @Body() createParticipantDto: CreateParticipantDto) {
         this.logger.log('post participant');
         const newParticipant = Object.assign({}, createParticipantDto);
-        return await this.participantService.create(newParticipant, req.user.email);
+        return await this.participantService.create(newParticipant, req.user.email, req.user.uid);
     }
 }

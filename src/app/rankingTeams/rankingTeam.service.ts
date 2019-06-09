@@ -6,18 +6,40 @@ import {CreateRankingTeamDto} from './create-rankingTeam.dto';
 
 @Injectable()
 export class RankingTeamService {
-    private readonly logger = new Logger('DummyService', true);
+    private readonly logger = new Logger('RankingTeamService', true);
 
     constructor(private readonly connection: Connection,
                 @InjectRepository(RankingTeam)
                 private readonly repository: Repository<RankingTeam>,) {
     }
 
-    async getAll(): Promise<RankingTeam[]> {
-        return await this.connection
+    async getAllByCompetitionId(competitionid): Promise<RankingTeam[]> {
+        const dbResult = await this.connection
             .getRepository(RankingTeam)
-            .createQueryBuilder('dummy')
+            .createQueryBuilder('rankingTeam')
+            .leftJoinAndSelect('rankingTeam.competition', 'competition')
+            .leftJoinAndSelect('rankingTeam.prediction', 'prediction')
+            .leftJoinAndSelect('rankingTeam.team', 'team')
+            .where('competition.id = :id', {id: competitionid})
             .getMany();
+
+        return dbResult.map(item => {
+            return {
+                ...item,
+                team: {
+                    ...item.team,
+                    id: item.id // set rankingTeam id io teamid.
+                }
+            }
+        }).sort((a, b) => {
+            if (a.team.name < b.team.name) {
+                return -1;
+            }
+            if (a.team.name > b.team.name) {
+                return 1;
+            }
+            return 0;
+        });
     }
 
     async create(dummy: CreateRankingTeamDto): Promise<RankingTeam> {

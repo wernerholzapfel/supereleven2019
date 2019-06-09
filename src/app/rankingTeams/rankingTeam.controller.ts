@@ -1,7 +1,8 @@
-import {Body, Controller, Get, Logger, Post, Req} from '@nestjs/common';
+import {Body, Controller, Get, Logger, Param, Post, Req} from '@nestjs/common';
 import {RankingTeamService} from './rankingTeam.service';
 import {RankingTeam} from './rankingTeam.entity';
 import {CreateRankingTeamDto} from './create-rankingTeam.dto';
+import {RankingPrediction} from '../rankingPredictions/rankingPredictions.entity';
 
 @Controller('rankingteam')
 export class RankingTeamController {
@@ -10,9 +11,9 @@ export class RankingTeamController {
     constructor(private readonly service: RankingTeamService) {
     }
 
-    @Get()
-    async findAll(): Promise<RankingTeam[]> {
-        return this.service.getAll();
+    @Get('competitionid/:competitionid')
+    async findAll(@Param('competitionid') competitionid): Promise<RankingTeam[]> {
+        return this.service.getAllByCompetitionId(competitionid);
     }
 
     @Post()

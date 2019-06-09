@@ -27,9 +27,10 @@ export class ParticipantService {
     }
 
 
-    async create(participant: CreateParticipantDto, email: string): Promise<Participant> {
+    async create(participant: CreateParticipantDto, email: string, uid: string): Promise<Participant> {
         const newParticipant: Participant = Object.assign(participant);
         newParticipant.email = email.toLowerCase();
+        newParticipant.firebaseIdentifier = uid;
         return await this.participantRepository.save(newParticipant)
             .catch((err) => {
                 throw new HttpException({

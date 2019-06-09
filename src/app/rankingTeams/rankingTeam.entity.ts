@@ -2,6 +2,7 @@ import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from 'type
 import {RankingPrediction} from '../rankingPredictions/rankingPredictions.entity';
 import {Competition} from '../competitions/competition.entity';
 import {Team} from '../teams/team.entity';
+import {Prediction} from '../prediction/prediction.entity';
 
 @Entity()
 export class RankingTeam {
@@ -19,6 +20,9 @@ export class RankingTeam {
 
     @ManyToOne(type => Competition, competition => competition.predictions)
     competition: Competition;
+
+    @ManyToOne(type => Prediction, prediction => prediction.rankingTeam)
+    prediction: Prediction;
 
     @ManyToOne(type => Team, team => team.rankingTeam)
     team: Team;

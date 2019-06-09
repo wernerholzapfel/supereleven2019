@@ -11,7 +11,7 @@ export class Competition {
     id: string;
 
     @Column('text')
-    tourName: string;
+    name: string;
 
     @Column({type: 'date'})
     startDate: Date;

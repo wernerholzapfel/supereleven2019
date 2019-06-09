@@ -3,7 +3,7 @@ import {CompetitionService} from './competition.service';
 import {Competition} from './competition.entity';
 import {CreateCompetitionDto} from './create-competition.dto';
 
-@Controller('competitions')
+@Controller('competition')
 export class CompetitionsController {
     private readonly logger = new Logger('CompetitionsController', true);
 

@@ -7,23 +7,23 @@ import {RankingPrediction} from './rankingPredictions.entity';
 export class RankingPredictionsController {
     private readonly logger = new Logger('RankingpredictionsController', true);
 
-    constructor(private readonly rankinkpredictionsService: RankingPredictionsService) {
+    constructor(private readonly rankingpredictionsService: RankingPredictionsService) {
     }
 
     @Get()
     async get(): Promise<RankingPrediction[]> {
-        return this.rankinkpredictionsService.getAll();
+        return this.rankingpredictionsService.getAll();
     }
 
-    @Get('competition/:competitionId')
-    async findAll(@Param('competitionId') competitionId): Promise<RankingPrediction[]> {
-        return this.rankinkpredictionsService.findAllById(competitionId);
+    @Get('competitionid/:competitionid')
+    async findAll(@Param('competitionid') competitionid, @Req() req): Promise<RankingPrediction[]> {
+        return this.rankingpredictionsService.findAllByCompetitionId(competitionid, req.user.email);
     }
 
     @Post()
     async create(@Req() req, @Body() createRankingpredictionsDto: CreateRankingPredictionsDto[]) {
         this.logger.log('post headline');
-        const newObject = Object.assign({}, createRankingpredictionsDto);
-        return await this.rankinkpredictionsService.create(newObject);
+        console.log(req.user);
+        return await this.rankingpredictionsService.create(createRankingpredictionsDto, req.user.uid);
     }
 }

@@ -20,20 +20,38 @@ export class RankingPredictionsService {
             .leftJoinAndSelect('rankingPrediction.team', 'team')
             .getMany();
     }
-    async findAllById(id: string): Promise<RankingPrediction[]> {
-        return await this.connection
+
+    async findAllByCompetitionId(competitionid: string, email: string): Promise<RankingPrediction[]> {
+        const rankingPrediction: RankingPrediction[] = await this.connection
             .getRepository(RankingPrediction)
             .createQueryBuilder('rankingPrediction')
+            .leftJoin('rankingPrediction.participant', 'participant')
             .leftJoin('rankingPrediction.competition', 'competition')
-            .leftJoinAndSelect('rankingPrediction.team', 'team')
-            .where('competition.id = :id', {id})
-            // .orderBy('headline.updatedDate', 'DESC')
+            .leftJoinAndSelect('rankingPrediction.team', 'rankingTeam')
+            .leftJoinAndSelect('rankingTeam.team', 'team')
+            .where('participant.email = :email', {email: email.toLowerCase()})
+            .andWhere('competition.id = :id', {id: competitionid})
+            .orderBy('rankingPrediction.position')
             .getMany();
+
+        return rankingPrediction.map(item => {
+            return {
+                ...item, team: {
+                    ...item.team,
+                    name: item.team.team.name,
+                    logoUrl: item.team.team.logoUrl
+                }
+            };
+        })
     }
 
-
-    async create(rankingPrediction: CreateRankingPredictionsDto[]): Promise<RankingPrediction[]> {
-        return await this.rankingPrediction.save(rankingPrediction)
+    async create(rankingPredictions: CreateRankingPredictionsDto[], firebaseIdentifier): Promise<RankingPrediction[]> {
+        return await this.rankingPrediction.save(rankingPredictions.map(p => {
+            return {
+                ...p,
+                participant: {firebaseIdentifier: firebaseIdentifier}
+            }
+        }))
             .catch((err) => {
                 throw new HttpException({
                     message: err.message,
