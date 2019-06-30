@@ -7,6 +7,8 @@ import {Prediction} from './prediction/prediction.entity';
 import {RankingPrediction} from './rankingPredictions/rankingPredictions.entity';
 import {Team} from './teams/team.entity';
 import {RankingTeam} from './rankingTeams/rankingTeam.entity';
+import {Match} from './match/match.entity';
+import {MatchPrediction} from './match-prediction/match-prediction.entity';
 
 // @ts-ignore
 export const ormconfig: TypeOrmModuleOptions = {
@@ -21,6 +23,8 @@ export const ormconfig: TypeOrmModuleOptions = {
         RankingPrediction,
         RankingTeam,
         Team,
+        Match,
+        MatchPrediction,
     ],
     logging: true,
     synchronize: true, // DEV only, do not use on PROD!

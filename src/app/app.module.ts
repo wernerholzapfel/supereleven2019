@@ -11,6 +11,8 @@ import {PredictionModule} from './prediction/prediction.module';
 import {RankingPredictionsModule} from './rankingPredictions/rankingPredictions.module';
 import {TeamModule} from './teams/team.module';
 import {RankingTeamModule} from './rankingTeams/rankingTeam.module';
+import { MatchPredictionModule } from './match-prediction/match-prediction.module';
+import {MatchModule} from './match/match.module';
 
 @Module({
     imports: [
@@ -21,7 +23,9 @@ import {RankingTeamModule} from './rankingTeams/rankingTeam.module';
         PredictionModule,
         RankingPredictionsModule,
         RankingTeamModule,
-        TeamModule
+        TeamModule,
+        MatchPredictionModule,
+        MatchModule,
     ],
     controllers: [
         AppController],
