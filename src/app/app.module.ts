@@ -13,6 +13,8 @@ import {TeamModule} from './teams/team.module';
 import {RankingTeamModule} from './rankingTeams/rankingTeam.module';
 import { MatchPredictionModule } from './match-prediction/match-prediction.module';
 import {MatchModule} from './match/match.module';
+import { QuestionsModule } from './questions/questions.module';
+import { QuestionsPredictionModule } from './questions-prediction/questions-prediction.module';
 
 @Module({
     imports: [
@@ -26,6 +28,8 @@ import {MatchModule} from './match/match.module';
         TeamModule,
         MatchPredictionModule,
         MatchModule,
+        QuestionsModule,
+        QuestionsPredictionModule,
     ],
     controllers: [
         AppController],

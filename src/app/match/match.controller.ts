@@ -5,7 +5,8 @@ import {CreateMatchDto} from './create-match.dto';
 
 @Controller('match')
 export class MatchController {
-    constructor(private readonly service: MatchService) {}
+    constructor(private readonly service: MatchService) {
+    }
 
     @Get('prediction/:predictionid')
     async findMatchesByPredictionId(@Param('predictionid') predictionid): Promise<Match[]> {
@@ -15,6 +16,6 @@ export class MatchController {
     @Post()
     async create(@Req() req, @Body() createMatchDto: CreateMatchDto[]) {
         return await this.service.create(createMatchDto)
-}
+    }
 
 }
