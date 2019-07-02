@@ -1,7 +1,7 @@
 import {IsDefined, IsNumber, IsString} from 'class-validator';
 import {Competition} from '../competitions/competition.entity';
 import {Prediction} from '../prediction/prediction.entity';
-import {Question} from '../questions/question.entity';
+import {Question} from '../question/question.entity';
 
 export class CreateQuestionPredictionDto {
     readonly id: string;

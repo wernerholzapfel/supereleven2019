@@ -2,7 +2,7 @@ import {Body, Controller, Get, Logger, Param, Post, Req} from '@nestjs/common';
 import {ParticipantService} from './participant.service';
 import {CreateParticipantDto} from './create-participant.dto';
 import {Headline} from '../headlines/headline.entity';
-import {RankingPrediction} from '../rankingPredictions/rankingPredictions.entity';
+import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
 import {Participant} from './participant.entity';
 
 @Controller('participant')

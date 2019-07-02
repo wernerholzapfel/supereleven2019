@@ -3,7 +3,7 @@ import {Match} from '../match/match.entity';
 import {Competition} from '../competitions/competition.entity';
 import {Prediction} from '../prediction/prediction.entity';
 import {Participant} from '../participant/participant.entity';
-import {Question} from '../questions/question.entity';
+import {Question} from '../question/question.entity';
 
 @Entity()
 @Index(['participant', 'question'], {unique: true})

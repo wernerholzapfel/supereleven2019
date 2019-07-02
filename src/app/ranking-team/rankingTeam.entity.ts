@@ -1,24 +1,22 @@
 import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from 'typeorm';
+import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
 import {Competition} from '../competitions/competition.entity';
+import {Team} from '../team/team.entity';
 import {Prediction} from '../prediction/prediction.entity';
-import {QuestionPrediction} from '../questions-prediction/question-prediction.entity';
 
 @Entity()
-export class Question {
+export class RankingTeam {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column()
-    question: string;
-
     @Column({nullable: true})
-    answer: string;
+    position: number;
 
     @Column({nullable: true})
     roundId: number;
 
-    @OneToMany(type => QuestionPrediction, questionPrediction => questionPrediction.question)
-    questionPredictions: QuestionPrediction[];
+    @OneToMany(type => RankingPrediction, prediction => prediction.team)
+    rankingPredictions: RankingPrediction[];
 
     @ManyToOne(type => Competition, competition => competition.predictions)
     competition: Competition;
@@ -26,4 +24,10 @@ export class Question {
     @ManyToOne(type => Prediction, prediction => prediction.rankingTeam)
     prediction: Prediction;
 
+    @ManyToOne(type => Team, team => team.rankingTeam)
+    team: Team;
+
+}
+
+export class RankingTeamRead extends RankingTeam {
 }

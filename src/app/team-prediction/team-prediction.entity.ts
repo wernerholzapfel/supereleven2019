@@ -1,18 +1,20 @@
 import {Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
-import {Competition} from '../competitions/competition.entity';
-import {RankingTeam} from '../rankingTeams/rankingTeam.entity';
-import {Participant} from '../participant/participant.entity';
 import {Prediction} from '../prediction/prediction.entity';
-import {Team} from '../teams/team.entity';
+import {Competition} from '../competitions/competition.entity';
+import {RankingTeam} from '../ranking-team/rankingTeam.entity';
+import {Participant} from '../participant/participant.entity';
+import {TeamPlayerController} from '../team-player/team-player.controller';
+import {Teamplayer} from '../team-player/teamplayer.entity';
 
 @Entity()
-@Index(['competition', 'team', 'participant' ], {unique: true})
-export class RankingPrediction {
+@Index(['competition', 'teamPlayer', 'participant', 'roundId'], {unique: true})
+
+export class Teamprediction {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column({nullable: false})
-    position: number;
+    roundId: number;
 
     @UpdateDateColumn()
     updatedDate: Date;
@@ -26,13 +28,9 @@ export class RankingPrediction {
     @ManyToOne(type => Competition, competition => competition.predictions, {nullable: false})
     competition: Competition;
 
-    @ManyToOne(type => RankingTeam, team => team.rankingPredictions, {nullable: false})
-    team: RankingTeam;
+    @ManyToOne(type => Teamplayer, teamPlayer => teamPlayer.teamPredictions, {nullable: false})
+    teamPlayer: Teamplayer;
 
     @ManyToOne(type => Participant, participant => participant.rankingPredictions, {nullable: false})
     participant: Participant;
-
-}
-
-export class RankingPredictionRead extends RankingPrediction {
 }

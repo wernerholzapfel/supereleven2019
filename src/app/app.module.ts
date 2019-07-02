@@ -8,13 +8,16 @@ import {ParticipantModule} from './participant/participant.module';
 import {AddFireBaseUserToRequest} from './authentication.middleware';
 import {CompetitionModule} from './competitions/competition.module';
 import {PredictionModule} from './prediction/prediction.module';
-import {RankingPredictionsModule} from './rankingPredictions/rankingPredictions.module';
-import {TeamModule} from './teams/team.module';
-import {RankingTeamModule} from './rankingTeams/rankingTeam.module';
-import { MatchPredictionModule } from './match-prediction/match-prediction.module';
+import {RankingPredictionsModule} from './ranking-prediction/rankingPredictions.module';
+import {TeamModule} from './team/team.module';
+import {RankingTeamModule} from './ranking-team/rankingTeam.module';
+import {MatchPredictionModule} from './match-prediction/match-prediction.module';
 import {MatchModule} from './match/match.module';
-import { QuestionsModule } from './questions/questions.module';
-import { QuestionsPredictionModule } from './questions-prediction/questions-prediction.module';
+import {QuestionsModule} from './question/questions.module';
+import {QuestionsPredictionModule} from './question-prediction/questions-prediction.module';
+import {PlayerModule} from './player/player.module';
+import {TeamPredictionModule} from './team-prediction/team-prediction.module';
+import {TeamPlayerModule} from './team-player/team-player.module';
 
 @Module({
     imports: [
@@ -30,6 +33,9 @@ import { QuestionsPredictionModule } from './questions-prediction/questions-pred
         MatchModule,
         QuestionsModule,
         QuestionsPredictionModule,
+        PlayerModule,
+        TeamPredictionModule,
+        TeamPlayerModule,
     ],
     controllers: [
         AppController],
@@ -44,6 +50,7 @@ export class AppModule {
 
         consumer.apply(AddFireBaseUserToRequest).forRoutes(
             {path: '/**', method: RequestMethod.POST},
-            {path: '/rankingprediction/competitionid/**', method: RequestMethod.GET});
+            {path: '/rankingprediction/competitionid/**', method: RequestMethod.GET},
+            {path: '/team-prediction/prediction/**', method: RequestMethod.GET});
     }
 }

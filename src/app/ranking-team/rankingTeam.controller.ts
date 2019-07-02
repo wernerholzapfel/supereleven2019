@@ -2,7 +2,7 @@ import {Body, Controller, Get, Logger, Param, Post, Req} from '@nestjs/common';
 import {RankingTeamService} from './rankingTeam.service';
 import {RankingTeam} from './rankingTeam.entity';
 import {CreateRankingTeamDto} from './create-rankingTeam.dto';
-import {RankingPrediction} from '../rankingPredictions/rankingPredictions.entity';
+import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
 
 @Controller('rankingteam')
 export class RankingTeamController {

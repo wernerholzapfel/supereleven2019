@@ -3,7 +3,7 @@ import {Participant} from './participant.entity';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Connection, Repository} from 'typeorm';
 import {CreateParticipantDto} from './create-participant.dto';
-import {RankingPrediction} from '../rankingPredictions/rankingPredictions.entity';
+import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
 
 @Injectable()
 export class ParticipantService {

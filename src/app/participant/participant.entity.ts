@@ -1,6 +1,7 @@
 import {Column, Entity, Generated, ManyToOne, OneToMany, PrimaryColumn, PrimaryGeneratedColumn} from 'typeorm';
-import {RankingPrediction} from '../rankingPredictions/rankingPredictions.entity';
+import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
 import {Competition} from '../competitions/competition.entity';
+import {Teamprediction} from '../team-prediction/team-prediction.entity';
 
 @Entity()
 export class Participant {
@@ -22,6 +23,9 @@ export class Participant {
 
     @OneToMany(type => RankingPrediction, prediction => prediction.participant)
     rankingPredictions: RankingPrediction[];
+
+    @OneToMany(type => Teamprediction, prediction => prediction.participant)
+    teamPredictions: Teamprediction[];
 
 }
 

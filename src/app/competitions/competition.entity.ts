@@ -1,8 +1,8 @@
 import {Column, Entity, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn} from 'typeorm';
 import {OneToMany} from 'typeorm';
 import {Prediction} from '../prediction/prediction.entity';
-import {RankingPrediction} from '../rankingPredictions/rankingPredictions.entity';
-import {RankingTeam} from '../rankingTeams/rankingTeam.entity';
+import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
+import {RankingTeam} from '../ranking-team/rankingTeam.entity';
 import {Participant} from '../participant/participant.entity';
 
 @Entity()

@@ -3,7 +3,7 @@ import {TeamService} from './team.service';
 import {CreateTeamDto} from './create-team.dto';
 import {Team} from './team.entity';
 
-@Controller('teams')
+@Controller('team')
 export class TeamController {
     private readonly logger = new Logger('TeamsController', true);
 
