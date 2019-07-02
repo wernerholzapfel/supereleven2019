@@ -1,4 +1,4 @@
-import {HttpException, HttpStatus, Injectable, Logger} from '@nestjs/common';
+import {HttpException, HttpStatus, Injectable} from '@nestjs/common';
 import {Connection, Repository} from 'typeorm';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Teamprediction} from './team-prediction.entity';
@@ -7,8 +7,6 @@ import {Participant} from '../participant/participant.entity';
 
 @Injectable()
 export class TeamPredictionService {
-    private readonly logger = new Logger('TeamPredictionService', true);
-
     constructor(private readonly connection: Connection,
                 @InjectRepository(Teamprediction)
                 private readonly repository: Repository<Teamprediction>,) {
@@ -19,7 +17,9 @@ export class TeamPredictionService {
             .getRepository(Participant)
             .createQueryBuilder('participant')
             .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId', {predictionId})
-            .leftJoinAndSelect('teamPredictions.teamPlayer', 'player')
+            .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+            .leftJoinAndSelect('teamPlayer.player', 'player')
+            .leftJoinAndSelect('teamPlayer.team', 'team')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
             .getOne();
 
