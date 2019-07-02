@@ -2,7 +2,9 @@ import {Body, Controller, Get, Logger, Param, Post, Req} from '@nestjs/common';
 import {CompetitionService} from './competition.service';
 import {Competition} from './competition.entity';
 import {CreateCompetitionDto} from './create-competition.dto';
+import {ApiUseTags} from '@nestjs/swagger';
 
+@ApiUseTags('competition')
 @Controller('competition')
 export class CompetitionsController {
     private readonly logger = new Logger('CompetitionsController', true);

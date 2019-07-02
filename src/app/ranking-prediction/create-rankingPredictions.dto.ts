@@ -1,12 +1,13 @@
 import {IsDefined, IsString} from 'class-validator';
+import {ApiModelProperty} from '@nestjs/swagger';
 
 // import {Tour} from '../tour/tour.entity';
 
 export class CreateRankingPredictionsDto {
     readonly id: string;
 
-    @IsDefined() @IsString() readonly title: string;
-    @IsDefined() @IsString() readonly text: string;
+    @IsDefined() @IsString() @ApiModelProperty() readonly title: string;
+    @IsDefined() @IsString() @ApiModelProperty() readonly text: string;
     // @IsDefined() readonly tour: Tour;
 
 }

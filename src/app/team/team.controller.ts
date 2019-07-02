@@ -2,7 +2,9 @@ import {Body, Controller, Get, Logger, Post, Req} from '@nestjs/common';
 import {TeamService} from './team.service';
 import {CreateTeamDto} from './create-team.dto';
 import {Team} from './team.entity';
+import {ApiUseTags} from '@nestjs/swagger';
 
+@ApiUseTags('team')
 @Controller('team')
 export class TeamController {
     private readonly logger = new Logger('TeamsController', true);

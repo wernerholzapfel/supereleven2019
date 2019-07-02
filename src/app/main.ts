@@ -1,6 +1,7 @@
 import {NestFactory} from '@nestjs/core';
 import {AppModule} from './app.module';
 import * as admin from 'firebase-admin';
+import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
 
 admin.initializeApp({
     credential: admin.credential.cert({
@@ -37,6 +38,14 @@ const allowCrossDomain = (req, res, next) => {
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
     app.use(allowCrossDomain);
+    const options = new DocumentBuilder()
+        .setTitle('Super eleven')
+        .setDescription('API description')
+        .setVersion('1.0')
+        .addBearerAuth()
+        .build();
+    const document = SwaggerModule.createDocument(app, options);
+    SwaggerModule.setup('docs', app, document);
 
     await app.listen(process.env.PORT || 3000)
 

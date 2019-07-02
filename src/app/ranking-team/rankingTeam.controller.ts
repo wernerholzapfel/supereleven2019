@@ -3,7 +3,9 @@ import {RankingTeamService} from './rankingTeam.service';
 import {RankingTeam} from './rankingTeam.entity';
 import {CreateRankingTeamDto} from './create-rankingTeam.dto';
 import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
+import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
 
+@ApiUseTags('rankingteam')
 @Controller('rankingteam')
 export class RankingTeamController {
     private readonly logger = new Logger('RankingTeamController', true);
@@ -11,6 +13,7 @@ export class RankingTeamController {
     constructor(private readonly service: RankingTeamService) {
     }
 
+    @ApiImplicitParam({name: 'competitionid'})
     @Get('competitionid/:competitionid')
     async findAll(@Param('competitionid') competitionid): Promise<RankingTeam[]> {
         return this.service.getAllByCompetitionId(competitionid);

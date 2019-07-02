@@ -5,13 +5,16 @@ import {CreateMatchPredictionDto} from '../match-prediction/create-match-predict
 import {QuestionsPredictionService} from './questions-prediction.service';
 import {QuestionPrediction} from './question-prediction.entity';
 import {CreateQuestionPredictionDto} from './create-question-prediction.dto';
+import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
 
+@ApiUseTags('question-prediction')
 @Controller('question-prediction')
 export class QuestionsPredictionController {
 
     constructor(private readonly service: QuestionsPredictionService) {
     }
 
+    @ApiImplicitParam({name: 'predictionid'})
     @Get('prediction/:predictionid')
     async findQuestionsByPredictionIdForParticipant(@Param('predictionid') predictionid): Promise<QuestionPrediction[]> {
         return this.service.findQuestionsByPredictionIdForParticipant(predictionid);

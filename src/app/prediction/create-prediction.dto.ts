@@ -1,9 +1,10 @@
 import {IsDefined, IsString} from 'class-validator';
+import {ApiModelProperty} from '@nestjs/swagger';
 
 export class CreatePredictionDto {
     readonly id: string;
 
-    @IsDefined() @IsString() readonly predictionType: PredictionType;
+    @IsDefined() @IsString() @ApiModelProperty() readonly predictionType: PredictionType;
 
 }
 

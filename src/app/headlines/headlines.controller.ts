@@ -2,7 +2,9 @@ import {Body, Controller, Get, Logger, Param, Post, Req} from '@nestjs/common';
 import {HeadlineService} from './headline.service';
 import {Headline} from './headline.entity';
 import {CreateHeadlineDto} from './create-headline.dto';
+import {ApiUseTags} from '@nestjs/swagger';
 
+@ApiUseTags('headlines')
 @Controller('headlines')
 export class HeadlinesController {
     private readonly logger = new Logger('HeadlinesController', true);

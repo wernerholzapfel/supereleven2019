@@ -1,12 +1,13 @@
-import {IsBoolean, IsDefined, IsString, IsDateString, Length} from 'class-validator';
+import {IsDefined, IsString} from 'class-validator';
+import {ApiModelProperty} from '@nestjs/swagger';
 
 export class CreateParticipantDto {
     readonly id: string;
 
-    @IsDefined() @IsString() readonly email: string;
+    @IsDefined() @IsString() @ApiModelProperty() readonly email: string;
 
-    @IsDefined() @IsString() readonly displayName: string;
+    @IsDefined() @IsString() @ApiModelProperty() readonly displayName: string;
 
-    @IsDefined() @IsString() readonly teamName: string;
+    @IsDefined() @IsString() @ApiModelProperty() readonly teamName: string;
 
 }

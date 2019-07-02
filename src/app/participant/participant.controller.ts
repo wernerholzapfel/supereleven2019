@@ -4,7 +4,9 @@ import {CreateParticipantDto} from './create-participant.dto';
 import {Headline} from '../headlines/headline.entity';
 import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
 import {Participant} from './participant.entity';
+import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
 
+@ApiUseTags('participant')
 @Controller('participant')
 export class ParticipantController {
     private readonly logger = new Logger('ParticipantController', true);
@@ -12,6 +14,8 @@ export class ParticipantController {
     constructor(private readonly participantService: ParticipantService) {
     }
 
+    @ApiImplicitParam({name: 'participantId'})
+    @ApiImplicitParam({name: 'competitionId'})
     @Get(':participantId/competition/:competitionId')
     async findAll(@Param('participantId') participantId, @Param('competitionId') competitionId): Promise<Participant> {
         return this.participantService.getParticipantPrediction(participantId, competitionId);

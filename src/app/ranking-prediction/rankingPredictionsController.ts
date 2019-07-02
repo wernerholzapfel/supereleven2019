@@ -2,7 +2,9 @@ import {Body, Controller, Get, Logger, Param, Post, Req} from '@nestjs/common';
 import {CreateRankingPredictionsDto} from './create-rankingPredictions.dto';
 import {RankingPredictionsService} from './rankingPredictions.service';
 import {RankingPrediction} from './rankingPredictions.entity';
+import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
 
+@ApiUseTags('rankingprediction')
 @Controller('rankingprediction')
 export class RankingPredictionsController {
     private readonly logger = new Logger('RankingpredictionsController', true);
@@ -15,6 +17,7 @@ export class RankingPredictionsController {
         return this.rankingpredictionsService.getAll();
     }
 
+    @ApiImplicitParam({name: 'competitionid'})
     @Get('competitionid/:competitionid')
     async findAll(@Param('competitionid') competitionid, @Req() req): Promise<RankingPrediction[]> {
         return this.rankingpredictionsService.findAllByCompetitionId(competitionid, req.user.email);
