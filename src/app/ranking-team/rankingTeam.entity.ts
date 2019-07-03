@@ -3,6 +3,7 @@ import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity
 import {Competition} from '../competitions/competition.entity';
 import {Team} from '../team/team.entity';
 import {Prediction} from '../prediction/prediction.entity';
+import {Round} from '../round/round.entity';
 
 @Entity()
 export class RankingTeam {

@@ -2,15 +2,16 @@ import {Module} from '@nestjs/common';
 import {TeamPredictionController} from './team-prediction.controller';
 import {TeamPredictionService} from './team-prediction.service';
 import {TypeOrmModule} from '@nestjs/typeorm';
-import {Competition} from '../competitions/competition.entity';
 import {Teamprediction} from './team-prediction.entity';
+import {RoundService} from '../round/round.service';
+import {Round} from '../round/round.entity';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Teamprediction]),
+        TypeOrmModule.forFeature([Teamprediction, Round]),
         TeamPredictionModule],
     controllers: [TeamPredictionController],
-    providers: [TeamPredictionService]
+    providers: [TeamPredictionService, RoundService]
 })
 export class TeamPredictionModule {
 }

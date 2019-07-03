@@ -14,6 +14,7 @@ import {QuestionPrediction} from './question-prediction/question-prediction.enti
 import {Player} from './player/player.entity';
 import {Teamplayer} from './team-player/teamplayer.entity';
 import {Teamprediction} from './team-prediction/team-prediction.entity';
+import {Round} from './round/round.entity';
 
 // @ts-ignore
 export const ormconfig: TypeOrmModuleOptions = {
@@ -35,6 +36,7 @@ export const ormconfig: TypeOrmModuleOptions = {
         Player,
         Teamplayer,
         Teamprediction,
+        Round,
     ],
     logging: true,
     synchronize: true, // DEV only, do not use on PROD!

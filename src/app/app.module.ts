@@ -18,6 +18,7 @@ import {QuestionsPredictionModule} from './question-prediction/questions-predict
 import {PlayerModule} from './player/player.module';
 import {TeamPredictionModule} from './team-prediction/team-prediction.module';
 import {TeamPlayerModule} from './team-player/team-player.module';
+import { RoundModule } from './round/round.module';
 
 @Module({
     imports: [
@@ -36,6 +37,7 @@ import {TeamPlayerModule} from './team-player/team-player.module';
         PlayerModule,
         TeamPredictionModule,
         TeamPlayerModule,
+        RoundModule,
     ],
     controllers: [
         AppController],

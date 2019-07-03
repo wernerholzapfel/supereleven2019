@@ -5,16 +5,17 @@ import {RankingTeam} from '../ranking-team/rankingTeam.entity';
 import {Participant} from '../participant/participant.entity';
 import {TeamPlayerController} from '../team-player/team-player.controller';
 import {Teamplayer} from '../team-player/teamplayer.entity';
+import {Round} from '../round/round.entity';
 
 @Entity()
-@Index(['competition', 'teamPlayer', 'participant', 'roundId'], {unique: true})
+@Index(['competition', 'teamPlayer', 'participant', 'round'], {unique: true})
 
 export class Teamprediction {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({nullable: false})
-    roundId: number;
+    @ManyToOne(type => Round, round => round.teampredictions, {nullable: false})
+    round: Round;
 
     @UpdateDateColumn()
     updatedDate: Date;

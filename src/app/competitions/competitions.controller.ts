@@ -9,18 +9,18 @@ import {ApiUseTags} from '@nestjs/swagger';
 export class CompetitionsController {
     private readonly logger = new Logger('CompetitionsController', true);
 
-    constructor(private readonly competitionService: CompetitionService) {
+    constructor(private readonly service: CompetitionService) {
     }
 
     @Get()
     async findAll(): Promise<Competition[]> {
-        return this.competitionService.getAll();
+        return this.service.getAll();
     }
 
     @Post()
     async create(@Req() req, @Body() createCompetitionDto: CreateCompetitionDto) {
         this.logger.log('post competition');
         const newObject = Object.assign({}, createCompetitionDto);
-        return await this.competitionService.create(newObject);
+        return await this.service.create(newObject);
     }
 }
