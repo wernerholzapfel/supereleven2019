@@ -12,7 +12,7 @@ export class Team {
     @Column('text')
     name: string;
 
-    @Column('text')
+    @Column('text', {nullable: true})
     logoUrl: string;
 
     @OneToMany(type => RankingTeam, rankingTeam => rankingTeam.team)
