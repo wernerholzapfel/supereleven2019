@@ -15,6 +15,7 @@ import {Player} from './player/player.entity';
 import {Teamplayer} from './team-player/teamplayer.entity';
 import {Teamprediction} from './team-prediction/team-prediction.entity';
 import {Round} from './round/round.entity';
+import {Teamplayerscores} from './team-player-scores/teamplayerscores.entity';
 
 // @ts-ignore
 export const ormconfig: TypeOrmModuleOptions = {
@@ -37,6 +38,7 @@ export const ormconfig: TypeOrmModuleOptions = {
         Teamplayer,
         Teamprediction,
         Round,
+        Teamplayerscores
     ],
     logging: true,
     synchronize: true, // DEV only, do not use on PROD!

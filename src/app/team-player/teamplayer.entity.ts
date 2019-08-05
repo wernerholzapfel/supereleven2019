@@ -4,13 +4,14 @@ import {Prediction} from '../prediction/prediction.entity';
 import {Team} from '../team/team.entity';
 import {Teamprediction} from '../team-prediction/team-prediction.entity';
 import {Player} from '../player/player.entity';
+import {Teamplayerscores} from '../team-player-scores/teamplayerscores.entity';
 
 
 export enum Position {
-    Keeper = 'Keeper',
+    Keeper = 'Goalkeeper',
     Defender = 'Defender',
     Midfielder = 'Midfielder',
-    Forward = 'Forward'
+    Forward = 'Attacker'
 }
 
 @Entity()
@@ -32,6 +33,9 @@ export class Teamplayer {
 
     @OneToMany(type => Teamprediction, prediction => prediction.teamPlayer)
     teamPredictions: Teamprediction[];
+
+    @OneToMany(type => Teamplayerscores, tpscores => tpscores.teamPlayer)
+    teamplayerscores: Teamplayerscores[];
 
     @ManyToOne(type => Competition, competition => competition.predictions)
     competition: Competition;

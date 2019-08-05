@@ -1,5 +1,5 @@
 import {Column, Entity, OneToMany, PrimaryGeneratedColumn} from 'typeorm';
-import {Teamplayer} from '../team-player/teamplayer.entity';
+import {Position, Teamplayer} from '../team-player/teamplayer.entity';
 
 @Entity()
 export class Player {
@@ -39,8 +39,8 @@ export class Player {
     })
     nationality: string;
 
-    @Column('text', {
-        nullable: true
+    @Column({
+        type: 'text',
     })
     position: string;
 

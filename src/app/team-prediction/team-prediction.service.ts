@@ -1,4 +1,4 @@
-import {HttpException, HttpStatus, Injectable} from '@nestjs/common';
+import {HttpException, HttpStatus, Injectable, Logger} from '@nestjs/common';
 import {Connection, getManager, Repository} from 'typeorm';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Teamprediction} from './team-prediction.entity';
@@ -9,6 +9,8 @@ import {Observable, of} from 'rxjs';
 
 @Injectable()
 export class TeamPredictionService {
+    private readonly logger = new Logger('TeamPredictionService', true);
+
     constructor(private readonly connection: Connection,
                 @InjectRepository(Teamprediction)
                 private readonly repository: Repository<Teamprediction>,
@@ -33,6 +35,8 @@ export class TeamPredictionService {
     async create(teamPredictions: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
 
         const nextRound = await this.roundService.getNextRound();
+        this.logger.log(nextRound);
+        this.logger.log(teamPredictions);
         return await getManager().transaction(async transactionalEntityManager => {
             await transactionalEntityManager
                 .getRepository(Teamprediction)

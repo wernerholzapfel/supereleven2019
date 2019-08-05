@@ -1,6 +1,7 @@
 import {Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
 import {Teamprediction} from '../team-prediction/team-prediction.entity';
 import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
+import {Teamplayerscores} from '../team-player-scores/teamplayerscores.entity';
 
 @Entity()
 export class Round {
@@ -21,6 +22,9 @@ export class Round {
 
     @OneToMany(type => Round, round => round.teampredictions)
     teampredictions: Teamprediction[];
+
+    @OneToMany(type => Round, round => round.teamplayerscores)
+    teamplayerscores: Teamplayerscores[];
 
     @UpdateDateColumn()
     updatedDate: Date;

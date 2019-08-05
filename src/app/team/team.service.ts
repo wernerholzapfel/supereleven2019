@@ -17,6 +17,7 @@ export class TeamService {
         return await this.connection
             .getRepository(Team)
             .createQueryBuilder('teams')
+            .orderBy('name')
             .getMany();
     }
 

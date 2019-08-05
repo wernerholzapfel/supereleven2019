@@ -19,6 +19,26 @@ export class TeamPlayerService {
             .leftJoinAndSelect('teamplayers.team', 'team')
             .leftJoin('teamplayers.prediction', 'prediction')
             .where('prediction.id = :id', {id: predictionId})
+            .orderBy('team.name')
+            .addOrderBy("player.position")
+            .addOrderBy("player.name")
             .getMany();
     }
+
+    async getTeamplayersWithScoresForRound(predictionId: string, roundId: string): Promise<Teamplayer[]> {
+        return await this.connection
+            .getRepository(Teamplayer)
+            .createQueryBuilder('teamplayers')
+            .leftJoinAndSelect('teamplayers.player', 'player')
+            .leftJoinAndSelect('teamplayers.team', 'team')
+            .leftJoin('teamplayers.prediction', 'prediction')
+            .leftJoinAndSelect('teamplayers.teamplayerscores', 'teamplayerscores', 'teamplayerscores.round = :roundId', {roundId})
+            .leftJoinAndSelect('teamplayerscores.round', 'round')
+            .where('prediction.id = :id', {id: predictionId})
+            .orderBy('team.name')
+            .addOrderBy("player.position")
+            .addOrderBy("player.name")
+            .getMany();
+    }
+
 }

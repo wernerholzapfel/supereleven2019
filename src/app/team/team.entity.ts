@@ -15,6 +15,9 @@ export class Team {
     @Column('text', {nullable: true})
     logoUrl: string;
 
+    @Column('int', {nullable: true})
+    referenceId;
+
     @OneToMany(type => RankingTeam, rankingTeam => rankingTeam.team)
     rankingTeam: RankingTeam[];
 
