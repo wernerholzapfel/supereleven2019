@@ -95,12 +95,19 @@ export class TeamPredictionService {
                         ...prediction,
                         teamPlayer: {
                             ...prediction.teamPlayer,
-                            totaalpunten: prediction.teamPlayer.teamplayerpunten.reduce((totalPoints, punten) => {
+                            totaalpuntenspeler: prediction.teamPlayer.teamplayerpunten.reduce((totalPoints, punten) => {
                                 return totalPoints + punten.totaal;
                             }, 0)
                         }
                     }
                 })
+            }
+        }).map(participant => {
+            return {
+                ...participant,
+                totaalpunten: participant.teamPredictions.reduce((totalPoints, player) => {
+                    return totalPoints + player.teamPlayer.totaalpuntenspeler;
+                }, 0)
             }
         })
     }
@@ -120,6 +127,7 @@ export class TeamPredictionService {
 
         }
     }
+
     determineGoals(position: string, goals) {
         this.logger.log(position);
         this.logger.log(goals);
@@ -141,6 +149,7 @@ export class TeamPredictionService {
 
         }
     }
+
     determineAssists(position: string, assists) {
         switch (position) {
             case Position.Keeper: {
