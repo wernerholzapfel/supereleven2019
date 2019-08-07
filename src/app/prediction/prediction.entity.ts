@@ -4,6 +4,7 @@ import {Competition} from '../competitions/competition.entity';
 import {RankingTeam} from '../ranking-team/rankingTeam.entity';
 import {Match} from '../match/match.entity';
 import {Teamplayer} from '../team-player/teamplayer.entity';
+import {Round} from '../round/round.entity';
 
 @Entity()
 export class Prediction {
@@ -30,6 +31,9 @@ export class Prediction {
 
     @OneToMany(type => Prediction, prediction => prediction.competition)
     predictions: Prediction[];
+
+    @OneToMany(type => Round, round => round.prediction)
+    rounds: Round[];
 
 }
 

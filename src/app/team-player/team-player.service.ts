@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 import {Connection, Repository} from 'typeorm';
 import {InjectRepository} from '@nestjs/typeorm';
-import {Player} from '../player/player.entity';
-import {Teamplayer} from './teamplayer.entity';
+import {Teamplayer, TeamplayerResponse} from './teamplayer.entity';
 
 @Injectable()
 export class TeamPlayerService {
@@ -20,13 +19,13 @@ export class TeamPlayerService {
             .leftJoin('teamplayers.prediction', 'prediction')
             .where('prediction.id = :id', {id: predictionId})
             .orderBy('team.name')
-            .addOrderBy("player.position")
-            .addOrderBy("player.name")
+            .addOrderBy('player.position')
+            .addOrderBy('player.name')
             .getMany();
     }
 
-    async getTeamplayersWithScoresForRound(predictionId: string, roundId: string): Promise<Teamplayer[]> {
-        return await this.connection
+    async getTeamplayersWithScoresForRound(predictionId: string, roundId: string): Promise<TeamplayerResponse[]> {
+        const list = await this.connection
             .getRepository(Teamplayer)
             .createQueryBuilder('teamplayers')
             .leftJoinAndSelect('teamplayers.player', 'player')
@@ -36,9 +35,29 @@ export class TeamPlayerService {
             .leftJoinAndSelect('teamplayerscores.round', 'round')
             .where('prediction.id = :id', {id: predictionId})
             .orderBy('team.name')
-            .addOrderBy("player.position")
-            .addOrderBy("player.name")
+            .addOrderBy('player.position')
+            .addOrderBy('player.name')
             .getMany();
+
+        return list.map(player => {
+            return {
+                ...player,
+                teamplayerscores: player.teamplayerscores[0] ? player.teamplayerscores[0] : {
+                    played: false,
+                    win: false,
+                    draw: false,
+                    cleansheet: false,
+                    yellow: false,
+                    secondyellow: false,
+                    red: false,
+                    goals: 0,
+                    assists: 0,
+                    penaltymissed: 0,
+                    penaltystopped: 0,
+                    owngoal: 0
+                    }
+            }
+        })
     }
 
 }

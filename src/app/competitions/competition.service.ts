@@ -17,7 +17,8 @@ export class CompetitionService {
         return await this.connection
             .getRepository(Competition)
             .createQueryBuilder('competition')
-            .leftJoinAndSelect('competition.predictions', 'prediction')
+            .leftJoinAndSelect('competition.predictions', 'predictions')
+            .leftJoinAndSelect('predictions.rounds', 'rounds')
             .leftJoinAndSelect('competition.participants', 'participants')
             .getMany();
     }

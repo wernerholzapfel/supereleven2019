@@ -4,7 +4,7 @@ import {Prediction} from '../prediction/prediction.entity';
 import {Team} from '../team/team.entity';
 import {Teamprediction} from '../team-prediction/team-prediction.entity';
 import {Player} from '../player/player.entity';
-import {Teamplayerscores} from '../team-player-scores/teamplayerscores.entity';
+import {Teamplayerscores, TeamplayerScoresResponse} from '../team-player-scores/teamplayerscores.entity';
 
 
 export enum Position {
@@ -46,5 +46,17 @@ export class Teamplayer {
     @ManyToOne(type => Team, team => team.teamPlayer)
     team: Team;
 
+}
+
+export interface TeamplayerResponse {
+    id: string;
+    position: Position;
+    player: Player;
+    active: boolean;
+    teamPredictions: Teamprediction[];
+    teamplayerscores: TeamplayerScoresResponse;
+    competition: Competition;
+    prediction: Prediction;
+    team: Team;
 
 }

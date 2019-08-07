@@ -16,6 +16,11 @@ export class RoundController {
         return this.service.getNextRound();
     }
 
+    @Get('previous')
+    async getPreviousRound(): Promise<Round> {
+        return this.service.getPreviousRound();
+    }
+
     @ApiImplicitParam({name: 'competitionid'})
     @Get('competitionid/:competitionid')
     async findAll(@Param('competitionid') competitionid): Promise<Round[]> {

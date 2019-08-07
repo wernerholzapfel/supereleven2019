@@ -3,6 +3,7 @@ import {TeamPredictionService} from './team-prediction.service';
 import {Teamprediction} from './team-prediction.entity';
 import {CreateTeamPredictionDto} from './create-team-prediction.dto';
 import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
+import {Participant} from '../participant/participant.entity';
 
 @ApiUseTags('team-prediction')
 @Controller('team-prediction')
@@ -21,6 +22,11 @@ export class TeamPredictionController {
     @Post()
     async create(@Req() req, @Body() createDto: CreateTeamPredictionDto[]) {
         return await this.service.create(createDto, req.user.uid);
+    }
+
+    @Get('prediction/:predictionid/stand')
+    async getStand(@Param('predictionid') predictionId, @Req() req,): Promise<any[]> {
+        return this.service.getStand(predictionId);
     }
 
 }
