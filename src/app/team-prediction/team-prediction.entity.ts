@@ -1,9 +1,7 @@
 import {Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
 import {Prediction} from '../prediction/prediction.entity';
 import {Competition} from '../competitions/competition.entity';
-import {RankingTeam} from '../ranking-team/rankingTeam.entity';
 import {Participant} from '../participant/participant.entity';
-import {TeamPlayerController} from '../team-player/team-player.controller';
 import {Teamplayer} from '../team-player/teamplayer.entity';
 import {Round} from '../round/round.entity';
 
@@ -22,6 +20,9 @@ export class Teamprediction {
 
     @CreateDateColumn()
     createdDate: Date;
+
+    @Column({default: false})
+    captain: boolean;
 
     @ManyToOne(type => Prediction, prediction => prediction.predictions, {nullable: false})
     prediction: Prediction;
