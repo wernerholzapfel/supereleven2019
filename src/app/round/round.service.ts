@@ -26,7 +26,7 @@ export class RoundService {
             .createQueryBuilder('round')
             .where('round.period ::tstzrange @> \'[ ' + new Date().toISOString() + ', ' + new Date().toISOString() + ']\'')
             .orWhere('\'[ ' + new Date().toISOString() + ', ' + new Date().toISOString() + ']\' ::tstzrange >> round.period')
-            .orderBy('round.period')
+            .orderBy('round.period', 'DESC')
             .getOne();
     }
 

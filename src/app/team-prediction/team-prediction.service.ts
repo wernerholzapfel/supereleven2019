@@ -38,6 +38,7 @@ export class TeamPredictionService {
             .leftJoinAndSelect('teamPlayer.player', 'player')
             .leftJoinAndSelect('teamPlayer.team', 'team')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+            .andWhere('teamPredictions.isActive')
             .getOne();
 
         return participant.teamPredictions;
@@ -184,32 +185,82 @@ export class TeamPredictionService {
     async create(teamPredictions: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
 
         const nextRound = await this.roundService.getNextRound();
-        this.logger.log(nextRound);
-        this.logger.log(teamPredictions);
-        return await getManager().transaction(async transactionalEntityManager => {
-            await transactionalEntityManager
-                .getRepository(Teamprediction)
-                .createQueryBuilder()
-                .delete()
-                .from(Teamprediction)
-                .where('round.id = :roundId', {roundId: nextRound.id})
-                .andWhere('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
-                .execute();
-            return await transactionalEntityManager.getRepository(Teamprediction)
-                .save(teamPredictions.map(p => {
+
+        const currentTeam = await this.connection
+            .getRepository(Participant)
+            .createQueryBuilder('participant')
+            .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId', {predictionId: teamPredictions[0].prediction.id})
+            .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+            .leftJoinAndSelect('teamPlayer.player', 'player')
+            .leftJoinAndSelect('teamPlayer.team', 'team')
+            .leftJoinAndSelect('teamPredictions.round', 'round')
+            .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+            .getOne();
+
+        const previousActivePlayers = currentTeam.teamPredictions
+            .filter(currentpl => currentpl.isActive)
+            .map(ap => {
+                if (!teamPredictions.find(tp => tp.teamPlayer.id === ap.teamPlayer.id && ap.isActive)) {
                     return {
-                        ...p,
-                        round: {id: nextRound.id},
-                        participant: {firebaseIdentifier: firebaseIdentifier}
+                        ...ap,
+                        isActive: false
                     }
-                }))
+                } else {
+                    return {
+                        ...ap,
+                    }
+                }
+            });
+
+
+        // filter form with previousactiveplayers so only new players are left over.
+        const newPlayers = teamPredictions.reduce((unique, item) => {
+            return previousActivePlayers
+                .filter(pap => pap.isActive)
+                .find(
+                    ap => ap.teamPlayer.id === item.teamPlayer.id) ?
+                unique :
+                [...unique, item]
+        }, []);
+
+        // get the id's of the previousactiveplayers that needs to be set to inactive.
+        const idsToBeupdated = [...previousActivePlayers
+            .filter(pap => !pap.isActive)
+            .map(item => item.id)];
+
+        if (newPlayers.length + currentTeam.teamPredictions.length > 17) {
+            throw new HttpException({
+                message: `Je mag nog ${17 - currentTeam.teamPredictions.length} transfers doorvoeren`,
+                statusCode: HttpStatus.FORBIDDEN,
+            }, HttpStatus.FORBIDDEN);
+        }
+
+        return await getManager().transaction(async transactionalEntityManager => {
+            if (idsToBeupdated.length > 0) //set inactive
+            {
+                await transactionalEntityManager.getRepository(Teamprediction)
+                    .createQueryBuilder()
+                    .update(Teamprediction)
+                    .set({isActive: false})
+                    .where('id IN (:...id)', {id: idsToBeupdated})
+                    .execute();
+            }
+            return await transactionalEntityManager.getRepository(Teamprediction)
+                .save([
+                    ...newPlayers.map(p => {
+                        return {
+                            ...p,
+                            round: {id: nextRound.id},
+                            participant: {firebaseIdentifier: firebaseIdentifier}
+                        }
+                    }),
+                ])
                 .catch((err) => {
                     throw new HttpException({
                         message: err.message,
                         statusCode: HttpStatus.BAD_REQUEST,
                     }, HttpStatus.BAD_REQUEST);
                 });
-
         })
     }
 }

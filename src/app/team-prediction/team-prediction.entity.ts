@@ -6,8 +6,6 @@ import {Teamplayer} from '../team-player/teamplayer.entity';
 import {Round} from '../round/round.entity';
 
 @Entity()
-@Index(['competition', 'teamPlayer', 'participant', 'round'], {unique: true})
-
 export class Teamprediction {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -23,6 +21,9 @@ export class Teamprediction {
 
     @Column({default: false})
     captain: boolean;
+
+    @Column({default: true})
+    isActive: boolean;
 
     @ManyToOne(type => Prediction, prediction => prediction.predictions, {nullable: false})
     prediction: Prediction;
