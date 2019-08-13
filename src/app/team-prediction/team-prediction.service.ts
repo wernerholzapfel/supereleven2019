@@ -50,9 +50,11 @@ export class TeamPredictionService {
             .createQueryBuilder('participant')
             .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId', {predictionId})
             .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+            .leftJoinAndSelect('teamPredictions.round', 'prediction_round')
+            .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
             .leftJoinAndSelect('teamPlayer.player', 'player')
             .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores')
-            .leftJoinAndSelect('teamplayerscores.round', 'round')
+            .leftJoinAndSelect('teamplayerscores.round', 'score_round')
             .leftJoinAndSelect('teamPlayer.team', 'team')
             .getMany();
 
@@ -60,26 +62,30 @@ export class TeamPredictionService {
             return {
                 ...participant,
                 teamPredictions: participant.teamPredictions.map(prediction => {
+                    const captainFactor = prediction.captain ? 2 : 1;
                     return {
                         ...prediction,
                         teamPlayer: {
                             ...prediction.teamPlayer,
                             teamplayerpunten: prediction.teamPlayer.teamplayerscores.map(score => {
-                                return {
-                                    ...score,
-                                    played: score.played * this.PLAYEDSCORE,
-                                    win: score.win * this.WINSCORE,
-                                    draw: score.draw * this.DRAWSCORE,
-                                    yellow: score.yellow * this.YELLOWSCORE,
-                                    secondyellow: score.secondyellow * this.SECNDYELLOWSCORE,
-                                    red: score.red * this.REDSCORE,
-                                    penaltymissed: score.penaltymissed * this.PENALTYMISSED,
-                                    owngoal: score.owngoal * this.OWNGOAL,
-                                    cleansheet: this.determineCleansheet(prediction.teamPlayer.position, score.cleansheet),
-                                    goals: this.determineGoals(prediction.teamPlayer.position, score.goals),
-                                    assists: this.determineAssists(prediction.teamPlayer.position, score.assists),
-                                    penaltystopped: this.determinePenaltyStopped(prediction.teamPlayer.position, score.penaltystopped),
-                                }
+                                return new Date(score.round.startDate) >= new Date(prediction.round.startDate)
+                                && (!prediction.tillRound || new Date(score.round.startDate) < new Date(prediction.tillRound.startDate))
+                                    ? {
+                                        ...score,
+                                        played: score.played * this.PLAYEDSCORE * captainFactor,
+                                        win: score.win * this.WINSCORE * captainFactor,
+                                        draw: score.draw * this.DRAWSCORE * captainFactor,
+                                        yellow: score.yellow * this.YELLOWSCORE * captainFactor,
+                                        secondyellow: score.secondyellow * this.SECNDYELLOWSCORE * captainFactor,
+                                        red: score.red * this.REDSCORE * captainFactor,
+                                        penaltymissed: score.penaltymissed * this.PENALTYMISSED * captainFactor,
+                                        owngoal: score.owngoal * this.OWNGOAL * captainFactor,
+                                        cleansheet: this.determineCleansheet(prediction.teamPlayer.position, score.cleansheet) * captainFactor,
+                                        goals: this.determineGoals(prediction.teamPlayer.position, score.goals) * captainFactor,
+                                        assists: this.determineAssists(prediction.teamPlayer.position, score.assists) * captainFactor,
+                                        penaltystopped: this.determinePenaltyStopped(prediction.teamPlayer.position, score.penaltystopped) * captainFactor,
+                                    }
+                                    : 0
                             }).map(punten => {
                                 return {
                                     ...punten,
@@ -114,7 +120,7 @@ export class TeamPredictionService {
     }
 
 
-    determineCleansheet(position: string, cleansheet) {
+    determineCleansheet(position: string, cleansheet): number {
         switch (position) {
             case Position.Keeper: {
                 return cleansheet * this.CLEANSHEET * 2
@@ -146,7 +152,7 @@ export class TeamPredictionService {
                 return goals * 3
             }
             default:
-                0
+                return 0;
 
         }
     }
@@ -166,8 +172,7 @@ export class TeamPredictionService {
                 return assists * 2
             }
             default:
-                0
-
+                return 0;
         }
     }
 
@@ -177,7 +182,7 @@ export class TeamPredictionService {
                 return penaltyStopped * this.PENALTYSTOPPED
             }
             default:
-                0
+                return 0;
 
         }
     }
@@ -213,6 +218,9 @@ export class TeamPredictionService {
             });
 
 
+        const currentCaptain = currentTeam.teamPredictions.find(player => player.captain);
+        const newCaptain = teamPredictions.find(player => player.captain);
+
         // filter form with previousactiveplayers so only new players are left over.
         const newPlayers = teamPredictions.reduce((unique, item) => {
             return previousActivePlayers
@@ -241,10 +249,26 @@ export class TeamPredictionService {
                 await transactionalEntityManager.getRepository(Teamprediction)
                     .createQueryBuilder()
                     .update(Teamprediction)
-                    .set({isActive: false})
+                    .set({isActive: false, tillRound: nextRound})
                     .where('id IN (:...id)', {id: idsToBeupdated})
                     .execute();
             }
+            if (currentCaptain.teamPlayer.id !== newCaptain.teamPlayer.id) {
+                await transactionalEntityManager.getRepository(Teamprediction)
+                    .createQueryBuilder()
+                    .update(Teamprediction)
+                    .set({captain: true})
+                    .where('teamPlayer.id = :newCaptainId', {newCaptainId: newCaptain.teamPlayer.id})
+                    .execute();
+
+                await transactionalEntityManager.getRepository(Teamprediction)
+                    .createQueryBuilder()
+                    .update(Teamprediction)
+                    .set({captain: false})
+                    .where('teamPlayer.id = :currentCaptainId', {currentCaptainId: currentCaptain.teamPlayer.id})
+                    .execute();
+            }
+
             return await transactionalEntityManager.getRepository(Teamprediction)
                 .save([
                     ...newPlayers.map(p => {

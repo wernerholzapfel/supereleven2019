@@ -1,4 +1,4 @@
-import {Injectable, Logger, NestMiddleware} from '@nestjs/common';
+import {ForbiddenException, Injectable, Logger, NestMiddleware, UnauthorizedException} from '@nestjs/common';
 import 'dotenv/config';
 import * as admin from 'firebase-admin';
 
@@ -31,6 +31,31 @@ export class AddFireBaseUserToRequest implements NestMiddleware {
         }
     };
 }
+
+
+@Injectable()
+export class AdminMiddleware implements NestMiddleware {
+    private readonly logger = new Logger('AdminMiddleware', true);
+
+    use (req, res, next)  {
+        const extractedToken = getToken(req.headers);
+        if (extractedToken) {
+            admin.auth().verifyIdToken(extractedToken).then((claims) => {
+                this.logger.log(claims);
+                if (claims.admin === true) {
+                    this.logger.log('ik ben admin');
+                    next();
+                }
+                else {
+                    next(new ForbiddenException('Om wijzigingen door te kunnen voeren moet je admin zijn'));
+                }
+            });
+        } else {
+            next(new UnauthorizedException('We konden je niet verifieren, log opnieuw in.'));
+        }
+    };
+}
+
 
 const getToken = headers => {
     if (headers && headers.authorization) {

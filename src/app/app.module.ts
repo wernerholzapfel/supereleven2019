@@ -5,7 +5,7 @@ import {ormconfig} from './ormconfig';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {HeadlineModule} from './headlines/headline.module';
 import {ParticipantModule} from './participant/participant.module';
-import {AddFireBaseUserToRequest} from './authentication.middleware';
+import {AddFireBaseUserToRequest, AdminMiddleware} from './authentication.middleware';
 import {CompetitionModule} from './competitions/competition.module';
 import {PredictionModule} from './prediction/prediction.module';
 import {RankingPredictionsModule} from './ranking-prediction/rankingPredictions.module';
@@ -18,8 +18,8 @@ import {QuestionsPredictionModule} from './question-prediction/questions-predict
 import {PlayerModule} from './player/player.module';
 import {TeamPredictionModule} from './team-prediction/team-prediction.module';
 import {TeamPlayerModule} from './team-player/team-player.module';
-import { RoundModule } from './round/round.module';
-import { TeamPlayerScoresModule } from './team-player-scores/team-player-scores.module';
+import {RoundModule} from './round/round.module';
+import {TeamPlayerScoresModule} from './team-player-scores/team-player-scores.module';
 
 @Module({
     imports: [
@@ -56,5 +56,20 @@ export class AppModule {
             {path: '/**', method: RequestMethod.POST},
             {path: '/rankingprediction/competitionid/**', method: RequestMethod.GET},
             {path: '/team-prediction/prediction/**', method: RequestMethod.GET});
+
+        consumer.apply(AdminMiddleware).forRoutes(
+            {path: 'competition/**', method: RequestMethod.POST},
+            {path: 'headlines/**', method: RequestMethod.POST},
+            {path: 'match/**', method: RequestMethod.POST},
+            {path: 'player/**', method: RequestMethod.POST},
+            {path: 'predictions/**', method: RequestMethod.POST},
+            {path: 'question/**', method: RequestMethod.POST},
+            {path: 'rankingteam/**', method: RequestMethod.POST},
+            {path: 'round/**', method: RequestMethod.POST},
+            {path: 'team/**', method: RequestMethod.POST},
+            {path: 'teamplayer-scores/**', method: RequestMethod.POST},
+        );
     }
+
+
 }
