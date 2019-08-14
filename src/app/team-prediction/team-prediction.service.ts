@@ -44,6 +44,29 @@ export class TeamPredictionService {
         return participant.teamPredictions;
     }
 
+    async getRoundStand(predictionId: string, roundId: string) {
+        const participants: any[] = await this.connection
+            .getRepository(Participant)
+            .createQueryBuilder('participant')
+            .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId and teamPredictions.round.id = :roundId', {
+                predictionId,
+                roundId
+            })
+            .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+            .leftJoinAndSelect('teamPredictions.round', 'prediction_round')
+            .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
+            .leftJoinAndSelect('teamPredictions.captainTillRound', 'captainTillRound')
+            .leftJoinAndSelect('teamPlayer.player', 'player')
+            .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores')
+            .leftJoinAndSelect('teamplayerscores.round', 'score_round')
+            .leftJoinAndSelect('teamPlayer.team', 'team')
+            .orderBy('teamPredictions.isActive', 'DESC')
+            .getMany();
+
+        return this.calculateStand(participants);
+
+    }
+
     async getStand(predictionId: string): Promise<any[]> {
         const participants: any[] = await this.connection
             .getRepository(Participant)
@@ -52,12 +75,20 @@ export class TeamPredictionService {
             .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
             .leftJoinAndSelect('teamPredictions.round', 'prediction_round')
             .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
+            .leftJoinAndSelect('teamPredictions.captainTillRound', 'captainTillRound')
             .leftJoinAndSelect('teamPlayer.player', 'player')
             .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores')
             .leftJoinAndSelect('teamplayerscores.round', 'score_round')
             .leftJoinAndSelect('teamPlayer.team', 'team')
+            .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
 
+        return this.calculateStand(participants);
+
+    }
+
+
+    calculateStand(participants: any[]) {
         return participants.map(participant => {
             return {
                 ...participant,
@@ -102,23 +133,68 @@ export class TeamPredictionService {
                         ...prediction,
                         teamPlayer: {
                             ...prediction.teamPlayer,
-                            totaalpuntenspeler: prediction.teamPlayer.teamplayerpunten.reduce((totalPoints, punten) => {
-                                return totalPoints + punten.totaal;
-                            }, 0)
+                            teamplayertotaalpunten: this.calculateTeamplayerTotaalPunten(prediction.teamPlayer.teamplayerpunten),
                         }
                     }
+                }).sort((a, b) => {
+                    const x = this.setSortValuePosition(a.teamPlayer.position);
+                    const y = this.setSortValuePosition(b.teamPlayer.position);
+                    return x < y ? -1 : x > y ? 1 : 0
                 })
             }
         }).map(participant => {
             return {
                 ...participant,
                 totaalpunten: participant.teamPredictions.reduce((totalPoints, player) => {
-                    return totalPoints + player.teamPlayer.totaalpuntenspeler;
+                    return totalPoints + player.teamPlayer.teamplayertotaalpunten.totaal;
                 }, 0)
             }
-        })
+        }).sort((a, b) => {
+            return a.totaalpunten > b.totaalpunten ? -1 : a.totaalpunten < b.totaalpunten ? 1 : 0;
+        });
     }
 
+    calculateTeamplayerTotaalPunten(teamplayerpunten) {
+        return {
+            'played': this.addReduceFunction(teamplayerpunten, 'played'),
+            'win': this.addReduceFunction(teamplayerpunten, 'win'),
+            'draw': this.addReduceFunction(teamplayerpunten, 'draw'),
+            'cleansheet': this.addReduceFunction(teamplayerpunten, 'cleansheet'),
+            'yellow': this.addReduceFunction(teamplayerpunten, 'yellow'),
+            'secondyellow': this.addReduceFunction(teamplayerpunten, 'secondyellow'),
+            'red': this.addReduceFunction(teamplayerpunten, 'red'),
+            'goals': this.addReduceFunction(teamplayerpunten, 'goals'),
+            'assists': this.addReduceFunction(teamplayerpunten, 'assists'),
+            'penaltymissed': this.addReduceFunction(teamplayerpunten, 'penaltymissed'),
+            'penaltystopped': this.addReduceFunction(teamplayerpunten, 'penaltystopped'),
+            'owngoal': this.addReduceFunction(teamplayerpunten, 'owngoal'),
+            'totaal': this.addReduceFunction(teamplayerpunten, 'totaal'),
+        }
+    }
+
+    addReduceFunction(array: any[], property: string) {
+        return array.reduce((totalPoints, item) => {
+            return item[property] ? totalPoints + item[property] : totalPoints;
+        }, 0)
+    };
+
+    private setSortValuePosition(position: string) {
+        switch (position) {
+            case Position.Keeper: {
+                return 0
+            }
+            case Position.Defender: {
+                return 1
+            }
+            case Position.Midfielder: {
+                return 2
+            }
+            case Position.Forward: {
+                return 3
+            }
+
+        }
+    }
 
     determineCleansheet(position: string, cleansheet): number {
         switch (position) {
@@ -222,7 +298,7 @@ export class TeamPredictionService {
         const newCaptain = teamPredictions.find(player => player.captain);
 
         // filter form with previousactiveplayers so only new players are left over.
-        const newPlayers = teamPredictions.reduce((unique, item) => {
+        let newPlayers = teamPredictions.reduce((unique, item) => {
             return previousActivePlayers
                 .filter(pap => pap.isActive)
                 .find(
@@ -254,17 +330,20 @@ export class TeamPredictionService {
                     .execute();
             }
             if (currentCaptain.teamPlayer.id !== newCaptain.teamPlayer.id) {
+                newPlayers = [...newPlayers, newCaptain];
+                // new captain moet toegevoegd worden, maar ouder speler niet meer actief
                 await transactionalEntityManager.getRepository(Teamprediction)
                     .createQueryBuilder()
                     .update(Teamprediction)
-                    .set({captain: true})
+                    .set({isActive: false})
                     .where('teamPlayer.id = :newCaptainId', {newCaptainId: newCaptain.teamPlayer.id})
                     .execute();
 
+                // current captain wordt captain af
                 await transactionalEntityManager.getRepository(Teamprediction)
                     .createQueryBuilder()
                     .update(Teamprediction)
-                    .set({captain: false})
+                    .set({captain: false, captainTillRound: nextRound})
                     .where('teamPlayer.id = :currentCaptainId', {currentCaptainId: currentCaptain.teamPlayer.id})
                     .execute();
             }

@@ -20,6 +20,7 @@ export class CompetitionService {
             .leftJoinAndSelect('competition.predictions', 'predictions')
             .leftJoinAndSelect('predictions.rounds', 'rounds')
             .leftJoinAndSelect('competition.participants', 'participants')
+            .orderBy('rounds.startDate')
             .getMany();
     }
 

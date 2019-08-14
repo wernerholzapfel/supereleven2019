@@ -29,4 +29,9 @@ export class TeamPredictionController {
         return this.service.getStand(predictionId);
     }
 
+    @Get('prediction/:predictionid/round/:roundid/stand')
+    async getRoundStand(@Param('predictionid') predictionId, @Param('roundid') roundId, @Req() req,): Promise<any[]> {
+        return this.service.getRoundStand(predictionId, roundId);
+    }
+
 }

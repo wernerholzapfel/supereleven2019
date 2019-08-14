@@ -16,6 +16,9 @@ export class Teamprediction {
     @ManyToOne(type => Round, round => round.teampredictions, {nullable: true})
     tillRound: Round;
 
+    @ManyToOne(type => Round, round => round.teampredictions, {nullable: true})
+    captainTillRound: Round;
+
     @UpdateDateColumn()
     updatedDate: Date;
 
