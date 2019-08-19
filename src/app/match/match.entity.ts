@@ -23,6 +23,9 @@ export class Match {
     @Column({nullable: true})
     roundId: number;
 
+    @Column({nullable:true, type: 'date'})
+    date: Date;
+
     @OneToMany(type => MatchPrediction, matchPrediction => matchPrediction.match)
     matchPredictions: MatchPrediction[];
 

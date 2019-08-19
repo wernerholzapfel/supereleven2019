@@ -17,6 +17,9 @@ export class Question {
     @Column({nullable: true})
     roundId: number;
 
+    @Column({nullable: true})
+    sortId: number;
+
     @OneToMany(type => QuestionPrediction, questionPrediction => questionPrediction.question)
     questionPredictions: QuestionPrediction[];
 
