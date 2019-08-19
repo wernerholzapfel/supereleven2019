@@ -23,9 +23,6 @@ export class Round {
     @Column('timestamp with time zone')
     startDate: Date;
 
-    @Column('timestamp with time zone')
-    endDate: Date;
-
     @Column('tstzrange')
     period: Date[];
 
