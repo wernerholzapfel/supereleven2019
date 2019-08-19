@@ -1,4 +1,4 @@
-import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from 'typeorm';
+import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique} from 'typeorm';
 import {Competition} from '../competitions/competition.entity';
 import {Prediction} from '../prediction/prediction.entity';
 import {Team} from '../team/team.entity';
@@ -15,6 +15,7 @@ export enum Position {
 }
 
 @Entity()
+@Unique(['player', 'team', 'prediction'])
 export class Teamplayer {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -22,6 +23,7 @@ export class Teamplayer {
     @Column({
         type: 'enum',
         enum: Position,
+        nullable: true
     })
     position: Position;
 

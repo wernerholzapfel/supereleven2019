@@ -1,19 +1,16 @@
-import {Column, Entity, OneToMany, PrimaryGeneratedColumn} from 'typeorm';
+import {Column, Entity, OneToMany, PrimaryGeneratedColumn, Unique} from 'typeorm';
 import {Position, Teamplayer} from '../team-player/teamplayer.entity';
 
 @Entity()
+@Unique(["playerReference", "teamReference"])
 export class Player {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column('int', {
-        nullable: true
-    })
+    @Column('int')
     playerReference: number;
 
-    @Column('int', {
-        nullable: true
-    })
+    @Column('int')
     teamReference: number;
 
     @Column('text')
@@ -39,7 +36,7 @@ export class Player {
     })
     nationality: string;
 
-    @Column({
+    @Column({nullable: true,
         type: 'text',
     })
     position: string;
