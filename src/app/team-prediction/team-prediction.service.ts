@@ -273,17 +273,30 @@ export class TeamPredictionService {
         const nextRound = await this.roundService.getNextRound();
 
         const currentTeam = await this.connection
-            .getRepository(Participant)
-            .createQueryBuilder('participant')
-            .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId', {predictionId: teamPredictions[0].prediction.id})
+            .getRepository(Teamprediction)
+            .createQueryBuilder('teamPredictions')
+            .leftJoin('teamPredictions.participant', 'participant')
+            .leftJoin('teamPredictions.prediction', 'prediction')
             .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
             .leftJoinAndSelect('teamPlayer.player', 'player')
             .leftJoinAndSelect('teamPlayer.team', 'team')
             .leftJoinAndSelect('teamPredictions.round', 'round')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
-            .getOne();
+            .andWhere('prediction.id = :predictionId', {predictionId: teamPredictions[0].prediction.id})
+            .getMany();
 
-        const previousActivePlayers = currentTeam.teamPredictions
+        // .getRepository(Participant)
+        // .createQueryBuilder('participant')
+        // .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId', {predictionId: teamPredictions[0].prediction.id})
+        // .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+        // .leftJoinAndSelect('teamPlayer.player', 'player')
+        // .leftJoinAndSelect('teamPlayer.team', 'team')
+        // .leftJoinAndSelect('teamPredictions.round', 'round')
+        // .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+        // .getOne();
+
+
+        const previousActivePlayers = currentTeam
             .filter(currentpl => currentpl.isActive)
             .map(ap => {
                 if (!teamPredictions.find(tp => tp.teamPlayer.id === ap.teamPlayer.id && ap.isActive)) {
@@ -299,7 +312,7 @@ export class TeamPredictionService {
             });
 
 
-        const currentCaptain = currentTeam.teamPredictions.find(player => player.captain);
+        const currentCaptain = currentTeam.find(player => player.captain);
         const newCaptain = teamPredictions.find(player => player.captain);
 
         // filter form with previousactiveplayers so only new players are left over.
@@ -317,14 +330,15 @@ export class TeamPredictionService {
             .filter(pap => !pap.isActive)
             .map(item => item.id)];
 
-        if (newPlayers.length + currentTeam.teamPredictions.length > 17) {
+        if (newPlayers.length + currentTeam.length > 17) {
             throw new HttpException({
-                message: `Je mag nog ${17 - currentTeam.teamPredictions.length} transfers doorvoeren`,
+                message: `Je mag nog ${17 - currentTeam.length} transfers doorvoeren`,
                 statusCode: HttpStatus.FORBIDDEN,
             }, HttpStatus.FORBIDDEN);
         }
 
         return await getManager().transaction(async transactionalEntityManager => {
+            this.logger.log(idsToBeupdated);
             if (idsToBeupdated.length > 0) //set inactive
             {
                 await transactionalEntityManager.getRepository(Teamprediction)
@@ -334,9 +348,12 @@ export class TeamPredictionService {
                     .where('id IN (:...id)', {id: idsToBeupdated})
                     .execute();
             }
-            if (currentCaptain.teamPlayer.id !== newCaptain.teamPlayer.id) {
-                newPlayers = [...newPlayers, newCaptain];
-                // new captain moet toegevoegd worden, maar ouder speler niet meer actief
+            if (!currentCaptain || currentCaptain.teamPlayer.id !== newCaptain.teamPlayer.id) {
+                //add new captain if he is not in the newplayers? dont understand this
+                newPlayers = newPlayers.find(np => np.teamPlayer.id === newCaptain.teamPlayer.id)
+                    ? [...newPlayers]
+                    : [...newPlayers, newCaptain];
+                // new captain moet toegevoegd worden, maar oude speler niet meer actief
                 await transactionalEntityManager.getRepository(Teamprediction)
                     .createQueryBuilder()
                     .update(Teamprediction)
@@ -344,15 +361,16 @@ export class TeamPredictionService {
                     .where('teamPlayer.id = :newCaptainId', {newCaptainId: newCaptain.teamPlayer.id})
                     .execute();
 
-                // current captain wordt captain af
-                await transactionalEntityManager.getRepository(Teamprediction)
-                    .createQueryBuilder()
-                    .update(Teamprediction)
-                    .set({captain: false, captainTillRound: nextRound})
-                    .where('teamPlayer.id = :currentCaptainId', {currentCaptainId: currentCaptain.teamPlayer.id})
-                    .execute();
+                if (currentCaptain) {
+                    // current captain wordt captain af
+                    await transactionalEntityManager.getRepository(Teamprediction)
+                        .createQueryBuilder()
+                        .update(Teamprediction)
+                        .set({captain: false, captainTillRound: nextRound})
+                        .where('teamPlayer.id = :currentCaptainId', {currentCaptainId: currentCaptain.teamPlayer.id})
+                        .execute();
+                }
             }
-
             return await transactionalEntityManager.getRepository(Teamprediction)
                 .save([
                     ...newPlayers.map(p => {
