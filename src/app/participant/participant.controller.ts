@@ -6,8 +6,8 @@ import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity
 import {Participant} from './participant.entity';
 import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
 
-@ApiUseTags('participant')
-@Controller('participant')
+@ApiUseTags('participants')
+@Controller('participants')
 export class ParticipantController {
     private readonly logger = new Logger('ParticipantController', true);
 

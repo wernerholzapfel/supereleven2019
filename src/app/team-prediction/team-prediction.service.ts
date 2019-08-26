@@ -30,6 +30,7 @@ export class TeamPredictionService {
     }
 
     async getAll(predictionId: string, firebaseIdentifier: string): Promise<Teamprediction[]> {
+
         const participant = await this.connection
             .getRepository(Participant)
             .createQueryBuilder('participant')
@@ -41,7 +42,8 @@ export class TeamPredictionService {
             .andWhere('teamPredictions.isActive')
             .getOne();
 
-        return participant.teamPredictions;
+
+        return participant ? participant.teamPredictions : [];
     }
 
     async getRoundStand(predictionId: string, roundId: string) {
@@ -87,18 +89,21 @@ export class TeamPredictionService {
 
     }
 
+    isCaptain(prediction, round): boolean {
+        return prediction.captain && !!prediction.captainTillRound || prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate
+    }
 
     calculateStand(participants: any[]) {
         return participants.map(participant => {
             return {
                 ...participant,
                 teamPredictions: participant.teamPredictions.map(prediction => {
-                    const captainFactor = prediction.captain ? 2 : 1;
                     return {
                         ...prediction,
                         teamPlayer: {
                             ...prediction.teamPlayer,
                             teamplayerpunten: prediction.teamPlayer.teamplayerscores.map(score => {
+                                const captainFactor = this.isCaptain(prediction, score.round) ? 2 : 1;
                                 return new Date(score.round.startDate) >= new Date(prediction.round.startDate)
                                 && (!prediction.tillRound || new Date(score.round.startDate) < new Date(prediction.tillRound.startDate))
                                     ? {
