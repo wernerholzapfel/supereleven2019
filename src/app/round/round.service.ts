@@ -34,7 +34,9 @@ export class RoundService {
         return await this.connection
             .getRepository(Round)
             .createQueryBuilder('round')
-            .where('round.competition.id = :competitionid', {competitionid})
+            .leftJoinAndSelect('round.competition', 'competition')
+            .where('competition.id = :competitionid', {competitionid})
+            .orderBy('round.period')
             .getMany();
     }
 }

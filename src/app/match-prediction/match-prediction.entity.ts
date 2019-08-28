@@ -3,6 +3,7 @@ import {Competition} from '../competitions/competition.entity';
 import {Prediction} from '../prediction/prediction.entity';
 import {Participant} from '../participant/participant.entity';
 import {Match} from '../match/match.entity';
+import {Round} from '../round/round.entity';
 
 @Entity()
 @Index(['participant', 'match'], {unique: true})
@@ -19,6 +20,9 @@ export class MatchPrediction {
     @Column({nullable: true})
     awayScore: number;
 
+    @Column({nullable: true})
+    punten: number;
+
     @ManyToOne(type => Competition, competition => competition.predictions, {nullable: false})
     competition: Competition;
 
@@ -27,6 +31,9 @@ export class MatchPrediction {
 
     @ManyToOne(type => Participant, participant => participant.rankingPredictions, {nullable: false})
     participant: Participant;
+
+    @ManyToOne(type => Round, round => round.matchPredictions, {nullable: true})
+    round: Round;
 
     @UpdateDateColumn()
     updatedDate: Date;

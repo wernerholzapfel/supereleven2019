@@ -22,7 +22,7 @@ export class RoundController {
     }
 
     @ApiImplicitParam({name: 'competitionid'})
-    @Get('competitionid/:competitionid')
+    @Get('competition/:competitionid')
     async findAll(@Param('competitionid') competitionid): Promise<Round[]> {
         return this.service.getAll(competitionid);
     }
