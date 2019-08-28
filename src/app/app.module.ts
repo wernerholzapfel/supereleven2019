@@ -20,6 +20,7 @@ import {TeamPredictionModule} from './team-prediction/team-prediction.module';
 import {TeamPlayerModule} from './team-player/team-player.module';
 import {RoundModule} from './round/round.module';
 import {TeamPlayerScoresModule} from './team-player-scores/team-player-scores.module';
+import * as admin from 'firebase-admin';
 
 @Module({
     imports: [
@@ -69,7 +70,10 @@ export class AppModule {
             {path: 'team/**', method: RequestMethod.POST},
             {path: 'teamplayer-scores/**', method: RequestMethod.POST},
         );
-    }
 
+        // admin.auth().setCustomUserClaims('YWl0nRAHkCOQBqEj6MdG51n9pjT2', {admin: true}).then(() => {
+        //     this.logger.log('customerset');
+        // });
+    }
 
 }
