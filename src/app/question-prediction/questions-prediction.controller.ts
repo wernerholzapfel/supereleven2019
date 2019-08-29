@@ -16,8 +16,8 @@ export class QuestionsPredictionController {
 
     @ApiImplicitParam({name: 'predictionid'})
     @Get('prediction/:predictionid')
-    async findQuestionsByPredictionIdForParticipant(@Param('predictionid') predictionid): Promise<QuestionPrediction[]> {
-        return this.service.findQuestionsByPredictionIdForParticipant(predictionid);
+    async findQuestionsByPredictionIdForParticipant(@Req() req, @Param('predictionid') predictionid): Promise<QuestionPrediction[]> {
+        return this.service.findQuestionsByPredictionIdForParticipant(predictionid, req.user.uid);
     }
 
     @Post()

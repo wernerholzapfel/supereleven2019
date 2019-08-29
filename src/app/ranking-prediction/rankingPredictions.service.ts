@@ -3,6 +3,7 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Connection, Repository} from 'typeorm';
 import {RankingPrediction} from './rankingPredictions.entity';
 import {CreateRankingPredictionsDto} from './create-rankingPredictions.dto';
+import {Participant} from '../participant/participant.entity';
 
 @Injectable()
 export class RankingPredictionsService {
@@ -46,10 +47,16 @@ export class RankingPredictionsService {
     }
 
     async create(rankingPredictions: CreateRankingPredictionsDto[], firebaseIdentifier): Promise<RankingPrediction[]> {
+
+        const participant = await this.connection.getRepository(Participant)
+            .createQueryBuilder('participant')
+            .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+            .getOne();
+
         return await this.rankingPrediction.save(rankingPredictions.map(p => {
             return {
                 ...p,
-                participant: {firebaseIdentifier: firebaseIdentifier}
+                participant
             }
         }))
             .catch((err) => {

@@ -5,14 +5,13 @@ import {Teamprediction} from '../team-prediction/team-prediction.entity';
 
 @Entity()
 export class Participant {
-    @Column()
-    @Generated("uuid")
+    @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column({select: false, unique: true})
     email: string;
 
-    @PrimaryColumn({select: false})
+    @Column({select: false})
     firebaseIdentifier: string;
 
     @Column({nullable: true})

@@ -13,8 +13,8 @@ export class MatchPredictionController {
 
     @ApiImplicitParam({name: 'predictionid'})
     @Get('prediction/:predictionid')
-    async findMatchesByPredictionIdForParticipant(@Param('predictionid') predictionid): Promise<MatchPrediction[]> {
-        return this.service.findMatchesByPredictionIdForParticipant(predictionid);
+    async findMatchesByPredictionIdForParticipant(@Req() req, @Param('predictionid') predictionid): Promise<MatchPrediction[]> {
+        return this.service.findMatchesByPredictionIdForParticipant(predictionid, req.user.uid);
     }
 
     @Post()

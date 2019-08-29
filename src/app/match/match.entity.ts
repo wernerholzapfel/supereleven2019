@@ -2,6 +2,7 @@ import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from 'type
 import {Competition} from '../competitions/competition.entity';
 import {Prediction} from '../prediction/prediction.entity';
 import {MatchPrediction} from '../match-prediction/match-prediction.entity';
+import {Round} from '../round/round.entity';
 
 @Entity()
 export class Match {
@@ -20,8 +21,8 @@ export class Match {
     @Column({nullable: true})
     awayScore: number;
 
-    @Column({nullable: true})
-    roundId: number;
+    @ManyToOne(type => Round, round => round.matches, {nullable: true})
+    round: Round;
 
     @Column({nullable:true, type: 'date'})
     date: Date;

@@ -270,6 +270,11 @@ export class TeamPredictionService {
 
     async create(teamPredictions: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
 
+        const participant = await this.connection.getRepository(Participant)
+            .createQueryBuilder('participant')
+            .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+            .getOne();
+
         const nextRound = await this.roundService.getNextRound();
 
         const currentTeam = await this.connection
@@ -337,6 +342,8 @@ export class TeamPredictionService {
             }, HttpStatus.FORBIDDEN);
         }
 
+        // todo logica netter uitschrijven met name wisselen van captain
+
         return await getManager().transaction(async transactionalEntityManager => {
             this.logger.log(idsToBeupdated);
             if (idsToBeupdated.length > 0) //set inactive
@@ -348,9 +355,9 @@ export class TeamPredictionService {
                     .where('id IN (:...id)', {id: idsToBeupdated})
                     .execute();
             }
-            if (!currentCaptain || currentCaptain.teamPlayer.id !== newCaptain.teamPlayer.id) {
+            if (!currentCaptain && newCaptain || newCaptain && currentCaptain.teamPlayer.id !== newCaptain.teamPlayer.id) {
                 //add new captain if he is not in the newplayers? dont understand this
-                newPlayers = newPlayers.find(np => np.teamPlayer.id === newCaptain.teamPlayer.id)
+                newPlayers = newPlayers.find(np => newCaptain && np.teamPlayer.id === newCaptain.teamPlayer.id)
                     ? [...newPlayers]
                     : [...newPlayers, newCaptain];
                 // new captain moet toegevoegd worden, maar oude speler niet meer actief
@@ -377,7 +384,7 @@ export class TeamPredictionService {
                         return {
                             ...p,
                             round: {id: nextRound.id},
-                            participant: {firebaseIdentifier: firebaseIdentifier}
+                            participant
                         }
                     }),
                 ])

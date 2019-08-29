@@ -12,6 +12,7 @@ import {Teamplayerscores} from '../team-player-scores/teamplayerscores.entity';
 import {Prediction} from '../prediction/prediction.entity';
 import {MatchPrediction} from '../match-prediction/match-prediction.entity';
 import {Competition} from '../competitions/competition.entity';
+import {Match} from '../match/match.entity';
 
 @Entity()
 export class Round {
@@ -32,6 +33,9 @@ export class Round {
 
     @OneToMany(type => Round, round => round.matchPredictions)
     matchPredictions: MatchPrediction[];
+
+    @OneToMany(type => Round, round => round.matches)
+    matches: Match[];
 
     @OneToMany(type => Round, round => round.teamplayerscores)
     teamplayerscores: Teamplayerscores[];

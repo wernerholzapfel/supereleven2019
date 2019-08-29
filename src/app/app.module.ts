@@ -56,7 +56,9 @@ export class AppModule {
         consumer.apply(AddFireBaseUserToRequest).forRoutes(
             {path: '/**', method: RequestMethod.POST},
             {path: '/rankingprediction/competitionid/**', method: RequestMethod.GET},
-            {path: '/team-prediction/prediction/**', method: RequestMethod.GET});
+            {path: '/team-prediction/prediction/**', method: RequestMethod.GET},
+            {path: '/question-prediction/prediction/**', method: RequestMethod.GET},
+            {path: '/match-prediction/prediction/**', method: RequestMethod.GET});
 
         consumer.apply(AdminMiddleware).forRoutes(
             {path: 'competition/**', method: RequestMethod.POST},

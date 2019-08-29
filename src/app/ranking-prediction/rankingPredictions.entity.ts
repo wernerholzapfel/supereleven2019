@@ -6,7 +6,7 @@ import {Prediction} from '../prediction/prediction.entity';
 import {Team} from '../team/team.entity';
 
 @Entity()
-@Index(['competition', 'team', 'participant' ], {unique: true})
+@Index(['competition', 'team', 'participant'], {unique: true})
 export class RankingPrediction {
     @PrimaryGeneratedColumn('uuid')
     id: string;

@@ -17,7 +17,7 @@ export class MatchController {
     }
 
     @Post()
-    async create(@Req() req, @Body() createMatchDto: CreateMatchDto[]) {
+    async create(@Req() req, @Body() createMatchDto: CreateMatchDto) {
         return await this.service.create(createMatchDto)
     }
 
