@@ -94,68 +94,89 @@ export class TeamPredictionService {
     }
 
     calculateStand(participants: any[]) {
-        return participants.map(participant => {
-            return {
-                ...participant,
-                teamPredictions: participant.teamPredictions.map(prediction => {
-                    return {
-                        ...prediction,
-                        teamPlayer: {
-                            ...prediction.teamPlayer,
-                            teamplayerpunten: prediction.teamPlayer.teamplayerscores.map(score => {
-                                const captainFactor = this.isCaptain(prediction, score.round) ? 2 : 1;
-                                return new Date(score.round.startDate) >= new Date(prediction.round.startDate)
-                                && (!prediction.tillRound || new Date(score.round.startDate) < new Date(prediction.tillRound.startDate))
-                                    ? {
-                                        ...score,
-                                        played: score.played * this.PLAYEDSCORE * captainFactor,
-                                        win: score.win * this.WINSCORE * captainFactor,
-                                        draw: score.draw * this.DRAWSCORE * captainFactor,
-                                        yellow: score.yellow * this.YELLOWSCORE * captainFactor,
-                                        secondyellow: score.secondyellow * this.SECNDYELLOWSCORE * captainFactor,
-                                        red: score.red * this.REDSCORE * captainFactor,
-                                        penaltymissed: score.penaltymissed * this.PENALTYMISSED * captainFactor,
-                                        owngoal: score.owngoal * this.OWNGOAL * captainFactor,
-                                        cleansheet: this.determineCleansheet(prediction.teamPlayer.position, score.cleansheet) * captainFactor,
-                                        goals: this.determineGoals(prediction.teamPlayer.position, score.goals) * captainFactor,
-                                        assists: this.determineAssists(prediction.teamPlayer.position, score.assists) * captainFactor,
-                                        penaltystopped: this.determinePenaltyStopped(prediction.teamPlayer.position, score.penaltystopped) * captainFactor,
+        let previousPosition = 1;
+
+        const stand = participants
+            .map(participant => {
+                return {
+                    ...participant,
+                    teamPredictions: participant.teamPredictions.map(prediction => {
+                        return {
+                            ...prediction,
+                            teamPlayer: {
+                                ...prediction.teamPlayer,
+                                teamplayerpunten: prediction.teamPlayer.teamplayerscores.map(score => {
+                                    const captainFactor = this.isCaptain(prediction, score.round) ? 2 : 1;
+                                    return new Date(score.round.startDate) >= new Date(prediction.round.startDate)
+                                    && (!prediction.tillRound || new Date(score.round.startDate) < new Date(prediction.tillRound.startDate))
+                                        ? {
+                                            ...score,
+                                            played: score.played * this.PLAYEDSCORE * captainFactor,
+                                            win: score.win * this.WINSCORE * captainFactor,
+                                            draw: score.draw * this.DRAWSCORE * captainFactor,
+                                            yellow: score.yellow * this.YELLOWSCORE * captainFactor,
+                                            secondyellow: score.secondyellow * this.SECNDYELLOWSCORE * captainFactor,
+                                            red: score.red * this.REDSCORE * captainFactor,
+                                            penaltymissed: score.penaltymissed * this.PENALTYMISSED * captainFactor,
+                                            owngoal: score.owngoal * this.OWNGOAL * captainFactor,
+                                            cleansheet: this.determineCleansheet(prediction.teamPlayer.position, score.cleansheet) * captainFactor,
+                                            goals: this.determineGoals(prediction.teamPlayer.position, score.goals) * captainFactor,
+                                            assists: this.determineAssists(prediction.teamPlayer.position, score.assists) * captainFactor,
+                                            penaltystopped: this.determinePenaltyStopped(prediction.teamPlayer.position, score.penaltystopped) * captainFactor,
+                                        }
+                                        : 0
+                                }).map(punten => {
+                                    return {
+                                        ...punten,
+                                        totaal: Object.entries(punten).reduce(function (total, pair: [string, number]) {
+                                            const [key, value] = pair;
+                                            return typeof value == 'number' ? total + value : total;
+                                        }, 0)
                                     }
-                                    : 0
-                            }).map(punten => {
-                                return {
-                                    ...punten,
-                                    totaal: Object.entries(punten).reduce(function (total, pair: [string, number]) {
-                                        const [key, value] = pair;
-                                        return typeof value == 'number' ? total + value : total;
-                                    }, 0)
-                                }
-                            }),
+                                }),
+                            }
                         }
-                    }
-                }).map(prediction => {
-                    return {
-                        ...prediction,
-                        teamPlayer: {
-                            ...prediction.teamPlayer,
-                            teamplayertotaalpunten: this.calculateTeamplayerTotaalPunten(prediction.teamPlayer.teamplayerpunten),
+                    }).map(prediction => {
+                        return {
+                            ...prediction,
+                            teamPlayer: {
+                                ...prediction.teamPlayer,
+                                teamplayertotaalpunten: this.calculateTeamplayerTotaalPunten(prediction.teamPlayer.teamplayerpunten),
+                            }
                         }
-                    }
-                }).sort((a, b) => {
-                    const x = this.setSortValuePosition(a.teamPlayer.position);
-                    const y = this.setSortValuePosition(b.teamPlayer.position);
-                    return x < y ? -1 : x > y ? 1 : 0
-                })
+                    }).sort((a, b) => {
+                        const x = this.setSortValuePosition(a.teamPlayer.position);
+                        const y = this.setSortValuePosition(b.teamPlayer.position);
+                        return x < y ? -1 : x > y ? 1 : 0
+                    })
+                }
+            })
+            .map(participant => {
+                return {
+                    ...participant,
+                    totaalpunten: participant.teamPredictions.reduce((totalPoints, player) => {
+                        return totalPoints + player.teamPlayer.teamplayertotaalpunten.totaal;
+                    }, 0)
+                }
+            })
+            .sort((a, b) => {
+                return a.totaalpunten > b.totaalpunten ? -1 : a.totaalpunten < b.totaalpunten ? 1 : 0;
+            });
+
+        return stand.map((participant, index) => {
+            if (index > 0 && participant.totaalpunten === stand[index - 1].totaalpunten) {
+                this.logger.log('ja 3x')
+                return {
+                    ...participant,
+                    position: previousPosition
+                }
+            } else {
+                previousPosition = index + 1;
+                return {
+                    ...participant,
+                    position: index + 1
             }
-        }).map(participant => {
-            return {
-                ...participant,
-                totaalpunten: participant.teamPredictions.reduce((totalPoints, player) => {
-                    return totalPoints + player.teamPlayer.teamplayertotaalpunten.totaal;
-                }, 0)
             }
-        }).sort((a, b) => {
-            return a.totaalpunten > b.totaalpunten ? -1 : a.totaalpunten < b.totaalpunten ? 1 : 0;
         });
     }
 

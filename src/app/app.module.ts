@@ -21,6 +21,7 @@ import {TeamPlayerModule} from './team-player/team-player.module';
 import {RoundModule} from './round/round.module';
 import {TeamPlayerScoresModule} from './team-player-scores/team-player-scores.module';
 import * as admin from 'firebase-admin';
+import {StandModule} from './stand/stand.module';
 
 @Module({
     imports: [
@@ -41,6 +42,7 @@ import * as admin from 'firebase-admin';
         TeamPlayerModule,
         RoundModule,
         TeamPlayerScoresModule,
+        StandModule
     ],
     controllers: [
         AppController],

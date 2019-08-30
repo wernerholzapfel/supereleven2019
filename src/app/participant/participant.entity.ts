@@ -2,6 +2,7 @@ import {Column, Entity, Generated, ManyToOne, OneToMany, PrimaryColumn, PrimaryG
 import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity';
 import {Competition} from '../competitions/competition.entity';
 import {Teamprediction} from '../team-prediction/team-prediction.entity';
+import {MatchPrediction} from '../match-prediction/match-prediction.entity';
 
 @Entity()
 export class Participant {
@@ -25,6 +26,9 @@ export class Participant {
 
     @OneToMany(type => Teamprediction, prediction => prediction.participant)
     teamPredictions: Teamprediction[];
+
+    @OneToMany(type => MatchPrediction, prediction => prediction.participant)
+    matchPredictions: MatchPrediction[];
 
 }
 
