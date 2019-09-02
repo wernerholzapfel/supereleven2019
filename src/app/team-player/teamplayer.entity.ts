@@ -33,6 +33,9 @@ export class Teamplayer {
     @Column({default: true})
     active: boolean;
 
+    @Column({nullable: true})
+    isSelected: boolean;
+
     @OneToMany(type => Teamprediction, prediction => prediction.teamPlayer)
     teamPredictions: Teamprediction[];
 
