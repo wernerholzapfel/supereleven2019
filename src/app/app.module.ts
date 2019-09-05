@@ -5,7 +5,7 @@ import {ormconfig} from './ormconfig';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {HeadlineModule} from './headlines/headline.module';
 import {ParticipantModule} from './participant/participant.module';
-import {AddFireBaseUserToRequest, AdminMiddleware} from './authentication.middleware';
+import {AddFireBaseUserToRequest, AdminMiddleware, IsRegistrationClosed} from './authentication.middleware';
 import {CompetitionModule} from './competitions/competition.module';
 import {PredictionModule} from './prediction/prediction.module';
 import {RankingPredictionsModule} from './ranking-prediction/rankingPredictions.module';
@@ -20,7 +20,6 @@ import {TeamPredictionModule} from './team-prediction/team-prediction.module';
 import {TeamPlayerModule} from './team-player/team-player.module';
 import {RoundModule} from './round/round.module';
 import {TeamPlayerScoresModule} from './team-player-scores/team-player-scores.module';
-import * as admin from 'firebase-admin';
 import {StandModule} from './stand/stand.module';
 
 @Module({
@@ -61,6 +60,11 @@ export class AppModule {
             {path: '/team-prediction/prediction/**', method: RequestMethod.GET},
             {path: '/question-prediction/prediction/**', method: RequestMethod.GET},
             {path: '/match-prediction/prediction/**', method: RequestMethod.GET});
+
+        consumer.apply(IsRegistrationClosed).forRoutes(
+            {path: '/stand/match/prediction/**', method: RequestMethod.GET},
+            {path: '/team-prediction/prediction/**/stand', method: RequestMethod.GET}
+        );
 
         consumer.apply(AdminMiddleware).forRoutes(
             {path: 'competition/**', method: RequestMethod.POST},

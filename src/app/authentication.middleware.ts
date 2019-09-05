@@ -1,6 +1,15 @@
-import {ForbiddenException, Injectable, Logger, NestMiddleware, UnauthorizedException} from '@nestjs/common';
+import {
+    ForbiddenException,
+    HttpException, HttpStatus,
+    Injectable,
+    Logger,
+    NestMiddleware,
+    UnauthorizedException
+} from '@nestjs/common';
 import 'dotenv/config';
 import * as admin from 'firebase-admin';
+import {getRepository} from 'typeorm';
+import {Competition} from './competitions/competition.entity';
 
 @Injectable()
 export class AddFireBaseUserToRequest implements NestMiddleware {
@@ -55,6 +64,36 @@ export class AdminMiddleware implements NestMiddleware {
         }
     };
 }
+
+
+@Injectable()
+export class IsRegistrationClosed implements NestMiddleware {
+    private readonly logger = new Logger('AdminMiddleware', true);
+
+    use (req, res, next)  {
+        const extractedToken = getToken(req.headers);
+        if (extractedToken) {
+            admin.auth().verifyIdToken(extractedToken).then((claims) => {
+                this.logger.log(claims);
+                if (claims.admin === true) {
+                    this.logger.log('ik ben admin');
+                    next();
+                }
+                else {
+                    this.logger.log('ja dit is goed');
+                    return getRepository(Competition).findOne({isActive: true}).then(competition => {
+                        next(new HttpException('No-Content', HttpStatus.NO_CONTENT));
+                    });
+                }
+            });
+        } else {
+            next(new UnauthorizedException('We konden je niet verifieren, log opnieuw in.'));
+        }
+    };
+}
+
+
+
 
 
 const getToken = headers => {
