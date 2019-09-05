@@ -289,7 +289,7 @@ export class TeamPredictionService {
         }
     }
 
-    async create(teamPredictions: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
+    async create(newTeam: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
 
         const participant = await this.connection.getRepository(Participant)
             .createQueryBuilder('participant')
@@ -308,7 +308,7 @@ export class TeamPredictionService {
             .leftJoinAndSelect('teamPlayer.team', 'team')
             .leftJoinAndSelect('teamPredictions.round', 'round')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
-            .andWhere('prediction.id = :predictionId', {predictionId: teamPredictions[0].prediction.id})
+            .andWhere('prediction.id = :predictionId', {predictionId: newTeam[0].prediction.id})
             .getMany();
 
         // .getRepository(Participant)
@@ -325,7 +325,7 @@ export class TeamPredictionService {
         const previousActivePlayers = currentTeam
             .filter(currentpl => currentpl.isActive)
             .map(ap => {
-                if (!teamPredictions.find(tp => tp.teamPlayer.id === ap.teamPlayer.id && ap.isActive)) {
+                if (!newTeam.find(tp => tp.teamPlayer.id === ap.teamPlayer.id && ap.isActive)) {
                     return {
                         ...ap,
                         isActive: false
@@ -339,10 +339,10 @@ export class TeamPredictionService {
 
 
         const currentCaptain = currentTeam.find(player => player.captain);
-        const newCaptain = teamPredictions.find(player => player.captain);
+        const newCaptain = newTeam.find(player => player.captain);
 
         // filter form with previousactiveplayers so only new players are left over.
-        let newPlayers = teamPredictions.reduce((unique, item) => {
+        let newPlayers = newTeam.reduce((unique, item) => {
             return previousActivePlayers
                 .filter(pap => pap.isActive)
                 .find(
@@ -387,6 +387,7 @@ export class TeamPredictionService {
                     .update(Teamprediction)
                     .set({isActive: false})
                     .where('teamPlayer.id = :newCaptainId', {newCaptainId: newCaptain.teamPlayer.id})
+                    .andWhere('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
                     .execute();
 
                 if (currentCaptain) {
@@ -396,6 +397,7 @@ export class TeamPredictionService {
                         .update(Teamprediction)
                         .set({captain: false, captainTillRound: nextRound})
                         .where('teamPlayer.id = :currentCaptainId', {currentCaptainId: currentCaptain.teamPlayer.id})
+                        .andWhere('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
                         .execute();
                 }
             }
