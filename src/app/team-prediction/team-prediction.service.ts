@@ -93,7 +93,7 @@ export class TeamPredictionService {
         return prediction.captain && !!prediction.captainTillRound || prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate
     }
 
-    calculateStand(participants: any[]) {
+    public calculateStand(participants: any[]) {
         let previousPosition = 1;
 
         const stand = participants

@@ -1,6 +1,7 @@
 import {
     ForbiddenException,
-    HttpException, HttpStatus,
+    HttpException,
+    HttpStatus,
     Injectable,
     Logger,
     NestMiddleware,
@@ -46,7 +47,7 @@ export class AddFireBaseUserToRequest implements NestMiddleware {
 export class AdminMiddleware implements NestMiddleware {
     private readonly logger = new Logger('AdminMiddleware', true);
 
-    use (req, res, next)  {
+    use(req, res, next) {
         const extractedToken = getToken(req.headers);
         if (extractedToken) {
             admin.auth().verifyIdToken(extractedToken).then((claims) => {
@@ -54,8 +55,7 @@ export class AdminMiddleware implements NestMiddleware {
                 if (claims.admin === true) {
                     this.logger.log('ik ben admin');
                     next();
-                }
-                else {
+                } else {
                     next(new ForbiddenException('Om wijzigingen door te kunnen voeren moet je admin zijn'));
                 }
             });
@@ -70,30 +70,35 @@ export class AdminMiddleware implements NestMiddleware {
 export class IsRegistrationClosed implements NestMiddleware {
     private readonly logger = new Logger('AdminMiddleware', true);
 
-    use (req, res, next)  {
+    use(req, res, next) {
         const extractedToken = getToken(req.headers);
         if (extractedToken) {
             admin.auth().verifyIdToken(extractedToken).then((claims) => {
                 this.logger.log(claims);
                 if (claims.admin === true) {
-                    this.logger.log('ik ben admin');
                     next();
-                }
-                else {
-                    this.logger.log('ja dit is goed');
-                    return getRepository(Competition).findOne({isActive: true}).then(competition => {
-                        next(new HttpException('No-Content', HttpStatus.NO_CONTENT));
-                    });
+                } else {
+                    this.logger.log('check if registration closed with claim');
+                    return checkIfRegistrationIsClosed()
                 }
             });
         } else {
-            next(new UnauthorizedException('We konden je niet verifieren, log opnieuw in.'));
+            this.logger.log('check if registration closed withoutclaim');
+
+            return checkIfRegistrationIsClosed();
         }
+
+        function checkIfRegistrationIsClosed() {
+            return getRepository(Competition).findOne({isActive: true}).then(competition => {
+                competition.deadline > new Date()
+                    ? next(new HttpException('No-Content', HttpStatus.NO_CONTENT))
+                    : next();
+            });
+        }
+
     };
+
 }
-
-
-
 
 
 const getToken = headers => {

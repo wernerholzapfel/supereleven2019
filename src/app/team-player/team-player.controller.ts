@@ -21,4 +21,9 @@ export class TeamPlayerController {
     async findAllForRoundId(@Param('predictionid') predictionId, @Param('roundid') roundId): Promise<TeamplayerResponse[]> {
         return this.service.getTeamplayersWithScoresForRound(predictionId, roundId);
     }
+
+    @Get('prediction/:predictionid/stats')
+    async stats(@Param('predictionid') predictionId): Promise<any[]> {
+        return this.service.getStats(predictionId);
+    }
 }

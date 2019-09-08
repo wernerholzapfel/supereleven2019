@@ -63,7 +63,8 @@ export class AppModule {
 
         consumer.apply(IsRegistrationClosed).forRoutes(
             {path: '/stand/match/prediction/**', method: RequestMethod.GET},
-            {path: '/team-prediction/prediction/**/stand', method: RequestMethod.GET}
+            {path: '/team-prediction/prediction/**/stand', method: RequestMethod.GET},
+            {path: '/team-player/prediction/**/stats', method: RequestMethod.GET}
         );
 
         consumer.apply(AdminMiddleware).forRoutes(
