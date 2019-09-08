@@ -175,7 +175,7 @@ export class TeamPredictionService {
                 return {
                     ...participant,
                     position: index + 1
-            }
+                }
             }
         });
     }
@@ -383,21 +383,23 @@ export class TeamPredictionService {
                     : [...newPlayers, newCaptain];
                 // new captain moet toegevoegd worden, maar oude speler niet meer actief
                 await transactionalEntityManager.getRepository(Teamprediction)
-                    .createQueryBuilder()
+                    .createQueryBuilder('teamPrediction')
                     .update(Teamprediction)
                     .set({isActive: false})
-                    .where('teamPlayer.id = :newCaptainId', {newCaptainId: newCaptain.teamPlayer.id})
-                    .andWhere('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+                    .where('"teamPlayerId" = :newCaptainId', {newCaptainId: newCaptain.teamPlayer.id})
+                    .andWhere('"participantId" = :participantId', {participantId: participant.id})
                     .execute();
 
                 if (currentCaptain) {
                     // current captain wordt captain af
                     await transactionalEntityManager.getRepository(Teamprediction)
-                        .createQueryBuilder()
+                        .createQueryBuilder('teamPrediction')
+                        .leftJoin('teamPrediction.participant', 'participant')
+                        .leftJoin('teamPrediction.teamPlayer', 'teamPlayer')
                         .update(Teamprediction)
                         .set({captain: false, captainTillRound: nextRound})
-                        .where('teamPlayer.id = :currentCaptainId', {currentCaptainId: currentCaptain.teamPlayer.id})
-                        .andWhere('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+                        .where('"teamPlayerId" = :newCaptainId', {newCaptainId: newCaptain.teamPlayer.id})
+                        .andWhere('"participantId" = :participantId', {participantId: participant.id})
                         .execute();
                 }
             }
