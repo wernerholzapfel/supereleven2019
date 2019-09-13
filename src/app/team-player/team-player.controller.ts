@@ -17,6 +17,11 @@ export class TeamPlayerController {
 
 
     @ApiImplicitParam({name: 'roundid'})
+    @Get('stats/prediction/:predictionid/round/:roundid')
+    async getStatsForRound(@Param('predictionid') predictionId, @Param('roundid') roundId): Promise<TeamplayerResponse[]> {
+        return this.service.getStatsForRound(predictionId, roundId);
+    }
+    @ApiImplicitParam({name: 'roundid'})
     @Get('prediction/:predictionid/round/:roundid')
     async findAllForRoundId(@Param('predictionid') predictionId, @Param('roundid') roundId): Promise<TeamplayerResponse[]> {
         return this.service.getTeamplayersWithScoresForRound(predictionId, roundId);

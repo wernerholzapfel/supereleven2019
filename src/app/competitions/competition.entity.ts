@@ -4,6 +4,7 @@ import {RankingPrediction} from '../ranking-prediction/rankingPredictions.entity
 import {RankingTeam} from '../ranking-team/rankingTeam.entity';
 import {Participant} from '../participant/participant.entity';
 import {Round} from '../round/round.entity';
+import {Headline} from '../headlines/headline.entity';
 
 @Entity()
 export class Competition {
@@ -40,6 +41,9 @@ export class Competition {
 
     @OneToMany(type => RankingTeam, rankingTeam => rankingTeam.competition)
     rankingTeams: RankingTeam[];
+
+    @OneToMany(type => Headline, headlines => headlines.competition)
+    headlines: Headline[];
 
     @OneToMany(type => Round, round => round.competition)
     rounds: Round[];

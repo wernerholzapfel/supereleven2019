@@ -1,4 +1,5 @@
 import {Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn} from 'typeorm';
+import {Competition} from '../competitions/competition.entity';
 
 @Entity()
 export class Headline {
@@ -23,8 +24,8 @@ export class Headline {
     @Column({default: true})
     isActive: boolean;
 
-    // @ManyToOne(type => Tour, tour => tour.headlines)
-    // tour: Tour;
+    @ManyToOne(type => Competition, competition => competition.headlines)
+    competition: Competition;
 
 }
 

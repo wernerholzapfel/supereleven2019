@@ -13,12 +13,12 @@ export class HeadlineService {
                 private readonly headlineRepository: Repository<Headline>,) {
     }
 
-    async findAllByTourId(tourId: string): Promise<Headline[]> {
+    async findAllByTourId(competitionId: string): Promise<Headline[]> {
         return await this.connection
             .getRepository(Headline)
             .createQueryBuilder('headline')
-            .leftJoin('headline.tour', 'tour')
-            // .where('tour.id = :tourId', {tourId})
+            .leftJoin('headline.competition', 'competition')
+            .where('competition.id = :competitionId', {competitionId})
             .orderBy('headline.updatedDate', 'DESC')
             .getMany();
     }
