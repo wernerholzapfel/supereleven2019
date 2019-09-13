@@ -1,46 +1,22 @@
-import {HttpService, Injectable, Logger} from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
+import {OneSignalService} from 'onesignal-api-client-nest';
+import {NotificationBySegmentBuilder} from 'onesignal-api-client-core';
 
 @Injectable()
 export class NotificationService {
     private readonly logger = new Logger('NotificationService', true);
 
-    constructor() {
+    constructor(private readonly oneSignalService: OneSignalService) {
     }
 
-    apikey = process.env.onesignal_apikey;
-
     async create(item: any): Promise<any> {
-        const headers = {
-            "Content-Type": "application/json; charset=utf-8",
-            "Authorization": `Basic ${this.apikey}`
-        };
+        const input = new NotificationBySegmentBuilder()
+            .setIncludedSegments([process.env.onesignal_segment])
+            .notification() // .email()
+            .setContents({en: item.content})
+            .build();
 
-        const options = {
-            host: "onesignal.com",
-            port: 443,
-            path: "/api/v1/notifications",
-            method: "POST",
-            headers: headers
-        };
+        return await this.oneSignalService.createNotification(input);
 
-        const https = require('https');
-        const req = https.request(options, function(res) {
-            res.on('data', function(data) {
-                console.log("Response:");
-                console.log(JSON.parse(data));
-            });
-        });
-
-        req.on('error', function(e) {
-            console.log("ERROR:");
-            console.log(e);
-        });
-
-        req.write(JSON.stringify({
-            'app_id': 'eb25a650-dde9-4137-9b48-e4e1323c93a7',
-            'included_segments': ['werner'],
-            'contents': {'en': item.content}
-        }));
-        req.end();
     };
 }
