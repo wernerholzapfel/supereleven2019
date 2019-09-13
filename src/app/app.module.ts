@@ -21,6 +21,7 @@ import {TeamPlayerModule} from './team-player/team-player.module';
 import {RoundModule} from './round/round.module';
 import {TeamPlayerScoresModule} from './team-player-scores/team-player-scores.module';
 import {StandModule} from './stand/stand.module';
+import {NotificationModule} from './notification/notification.module';
 
 @Module({
     imports: [
@@ -34,6 +35,7 @@ import {StandModule} from './stand/stand.module';
         TeamModule,
         MatchPredictionModule,
         MatchModule,
+        NotificationModule,
         QuestionsModule,
         QuestionsPredictionModule,
         PlayerModule,
@@ -70,6 +72,7 @@ export class AppModule {
         consumer.apply(AdminMiddleware).forRoutes(
             {path: 'competition/**', method: RequestMethod.POST},
             {path: 'headlines/**', method: RequestMethod.POST},
+            {path: 'notification/**', method: RequestMethod.POST},
             {path: 'match/**', method: RequestMethod.POST},
             {path: 'player/**', method: RequestMethod.POST},
             {path: 'predictions/**', method: RequestMethod.POST},
