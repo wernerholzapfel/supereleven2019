@@ -5,7 +5,12 @@ import {ormconfig} from './ormconfig';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {HeadlineModule} from './headlines/headline.module';
 import {ParticipantModule} from './participant/participant.module';
-import {AddFireBaseUserToRequest, AdminMiddleware, IsRegistrationClosed} from './authentication.middleware';
+import {
+    AddFireBaseUserToRequest,
+    AdminMiddleware,
+    CanSavePrediction,
+    IsRegistrationClosed
+} from './authentication.middleware';
 import {CompetitionModule} from './competitions/competition.module';
 import {PredictionModule} from './prediction/prediction.module';
 import {RankingPredictionsModule} from './ranking-prediction/rankingPredictions.module';
@@ -69,7 +74,12 @@ export class AppModule {
             {path: '/team-player/prediction/**/stats', method: RequestMethod.GET}
         );
 
-        consumer.apply(AdminMiddleware).forRoutes(
+        consumer.apply(CanSavePrediction).forRoutes(
+            {path: 'question-prediction/**', method: RequestMethod.POST},
+            {path: 'match-prediction/**', method: RequestMethod.POST},
+            {path: 'rankingprediction/**', method: RequestMethod.POST},
+        );
+            consumer.apply(AdminMiddleware).forRoutes(
             {path: 'competition/**', method: RequestMethod.POST},
             {path: 'headlines/**', method: RequestMethod.POST},
             {path: 'notification/**', method: RequestMethod.POST},

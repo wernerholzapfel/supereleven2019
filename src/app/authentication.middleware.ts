@@ -100,16 +100,32 @@ export class IsRegistrationClosed implements NestMiddleware {
 
 }
 
+@Injectable()
+export class CanSavePrediction implements NestMiddleware {
+    private readonly logger = new Logger('CanSavePrediction', true);
+
+    use(req, res, next) {
+        return checkIfRegistrationIsClosed();
+
+        function checkIfRegistrationIsClosed() {
+            return getRepository(Competition).findOne({isActive: true}).then(competition => {
+                competition.deadline < new Date()
+                    ? next(new HttpException('', HttpStatus.FORBIDDEN))
+                    : next();
+            });
+        }
+    }
+}
 
 const getToken = headers => {
-    if (headers && headers.authorization) {
-        const parted = headers.authorization.split(' ');
-        if (parted.length === 2) {
-            return parted[1];
+        if (headers && headers.authorization) {
+            const parted = headers.authorization.split(' ');
+            if (parted.length === 2) {
+                return parted[1];
+            } else {
+                return null;
+            }
         } else {
             return null;
         }
-    } else {
-        return null;
-    }
-};
+    };
