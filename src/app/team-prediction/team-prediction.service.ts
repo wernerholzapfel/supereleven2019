@@ -7,6 +7,7 @@ import {Participant} from '../participant/participant.entity';
 import {RoundService} from '../round/round.service';
 import {Observable} from 'rxjs';
 import {Position} from '../team-player/teamplayer.entity';
+import {Round} from '../round/round.entity';
 
 @Injectable()
 export class TeamPredictionService {
@@ -89,8 +90,16 @@ export class TeamPredictionService {
 
     }
 
-    isCaptain(prediction, round): boolean {
-        return prediction.captain && !!prediction.captainTillRound || prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate
+    isCaptain(prediction, round: Round): boolean {
+        if (prediction.captain) {
+            this.logger.log(round);
+            this.logger.log(prediction);
+            if (prediction.captainTillRound) {
+                this.logger.log(prediction.captainTillRound.startDate);
+            }
+            this.logger.log((prediction.captain && !!prediction.captainTillRound) || (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate));
+        }
+        return (prediction.captain && !prediction.captainTillRound) || (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate)
     }
 
     public calculateStand(participants: any[]) {
@@ -165,7 +174,6 @@ export class TeamPredictionService {
 
         return stand.map((participant, index) => {
             if (index > 0 && participant.totaalpunten === stand[index - 1].totaalpunten) {
-                this.logger.log('ja 3x')
                 return {
                     ...participant,
                     position: previousPosition
@@ -238,8 +246,6 @@ export class TeamPredictionService {
     }
 
     determineGoals(position: string, goals) {
-        this.logger.log(position);
-        this.logger.log(goals);
         switch (position) {
             case Position.Keeper: {
                 return goals * 10
@@ -366,7 +372,6 @@ export class TeamPredictionService {
         // todo logica netter uitschrijven met name wisselen van captain
 
         return await getManager().transaction(async transactionalEntityManager => {
-            this.logger.log(idsToBeupdated);
             if (idsToBeupdated.length > 0) //set inactive
             {
                 await transactionalEntityManager.getRepository(Teamprediction)
