@@ -21,7 +21,7 @@ export class TeamPredictionService {
     PENALTYMISSED = -4;
     PENALTYSTOPPED = 6;
     OWNGOAL = -4;
-    CLEANSHEET = -2;
+    CLEANSHEET = 2;
 
     constructor(private readonly connection: Connection,
                 @InjectRepository(Teamprediction)
