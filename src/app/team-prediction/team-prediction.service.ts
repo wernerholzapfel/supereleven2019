@@ -8,6 +8,7 @@ import {RoundService} from '../round/round.service';
 import {Observable} from 'rxjs';
 import {Position} from '../team-player/teamplayer.entity';
 import {Round} from '../round/round.entity';
+// §import admin from 'firebase-admin';
 
 @Injectable()
 export class TeamPredictionService {
@@ -17,7 +18,7 @@ export class TeamPredictionService {
     WINSCORE = 2;
     DRAWSCORE = 1;
     YELLOWSCORE = -2;
-    SECNDYELLOWSCORE = 6;
+    SECNDYELLOWSCORE = -6;
     REDSCORE = -8;
     PENALTYMISSED = -4;
     PENALTYSTOPPED = 6;
@@ -90,7 +91,7 @@ export class TeamPredictionService {
             .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
 
-        return this.calculateStand(participants.map(participant => {
+        let sortedStand = this.calculateStand(participants.map(participant => {
             return {
                 ...participant,
                 teamPredictions: participant.teamPredictions.map(prediction => {
@@ -101,6 +102,12 @@ export class TeamPredictionService {
                 })
             }
         }));
+
+        // let db = admin.database();
+        //
+        // let docRef = db.ref(`${predictionId}/teamstand/${roundId}`);
+        // docRef.set(sortedStand);
+        return sortedStand;
     }
 
     async getStand(predictionId: string): Promise<any[]> {
@@ -119,8 +126,14 @@ export class TeamPredictionService {
             .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
 
-        return this.calculateStand(participants);
+        const sortedStand = this.calculateStand(participants);
 
+        // let db = admin.database();
+        //
+        // let docRef = db.ref(`${predictionId}/teamstand/totaal`);
+        // docRef.set(sortedStand);
+
+        return sortedStand
     }
 
     isCaptain(prediction, round: Round): boolean {
