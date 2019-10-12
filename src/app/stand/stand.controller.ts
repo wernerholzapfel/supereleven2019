@@ -28,7 +28,7 @@ export class StandController {
         return this.service.createMatchStand(body.competitionId, body.predictionId);
     }
 
-    @ApiImplicitParam({name: 'predictionId'})
+    @ApiImplicitParam({name: 'competitionId'})
     @Post('total/create')
     async createTotalStand(@Req() req, @Body() body: {competitionId}) {
         return this.service.createTotalStand(body.competitionId);

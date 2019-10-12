@@ -4,8 +4,6 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Teamplayer, TeamplayerResponse} from './teamplayer.entity';
 import {TeamPredictionService} from '../team-prediction/team-prediction.service';
 import admin from 'firebase-admin';
-import {PredictionType} from '../prediction/create-prediction.dto';
-import DataSnapshot = admin.database.DataSnapshot;
 
 @Injectable()
 export class TeamPlayerService {
@@ -88,7 +86,7 @@ export class TeamPlayerService {
     }
 
     async createStats(competitionId: string, predictionId: string) {
-       const stats = this.getAllByPredictionId(predictionId);
+        const stats = await this.getAllByPredictionId(predictionId);
         let db = admin.database();
 
         let docRef = db.ref(`${competitionId}/statistieken/${predictionId}/totaal`);
@@ -155,7 +153,7 @@ export class TeamPlayerService {
     }
 
     async createStatsForRound(competitionId: string, predictionId: string, roundId: string): Promise<any[]> {
-        const stats = this.getStatsForRound(predictionId, roundId);
+        const stats = await this.getStatsForRound(predictionId, roundId);
 
         let db = admin.database();
 

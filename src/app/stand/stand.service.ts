@@ -30,7 +30,7 @@ export class StandService {
     }
 
     async createTotalStand(competitionId: string): Promise<any[]> {
-        const sortedPositionStand = this.getTotalStand(competitionId);
+        const sortedPositionStand = await this.getTotalStand(competitionId);
         let db = admin.database();
 
         let docRef = db.ref(`${competitionId}/totaalstand/totaal`);
@@ -111,7 +111,7 @@ export class StandService {
     }
 
     async createMatchStand(competitionId: string, predictionId: string): Promise<any[]> {
-       const sortedStand = this.getMatchStand(predictionId);
+       const sortedStand = await this.getMatchStand(predictionId);
         let db = admin.database();
 
         let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Matches}/totaal`);

@@ -106,7 +106,7 @@ export class TeamPredictionService {
     }
 
     async createRoundStand(competitionId: string, predictionId: string, roundId: string) {
-        const sortedStand = this.getRoundStand(predictionId, roundId);
+        const sortedStand = await this.getRoundStand(predictionId, roundId);
 
         let db = admin.database();
 
@@ -137,7 +137,7 @@ export class TeamPredictionService {
     }
 
     async createStand(competitionId: string, predictionId: string): Promise<any[]> {
-        const sortedStand = this.getStand(predictionId);
+        const sortedStand = await this.getStand(predictionId);
 
         let db = admin.database();
 
