@@ -8,7 +8,8 @@ import {RoundService} from '../round/round.service';
 import {Observable} from 'rxjs';
 import {Position} from '../team-player/teamplayer.entity';
 import {Round} from '../round/round.entity';
-// §import admin from 'firebase-admin';
+import admin from 'firebase-admin';
+import {PredictionType} from '../prediction/create-prediction.dto';
 
 @Injectable()
 export class TeamPredictionService {
@@ -91,7 +92,7 @@ export class TeamPredictionService {
             .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
 
-        let sortedStand = this.calculateStand(participants.map(participant => {
+        return this.calculateStand(participants.map(participant => {
             return {
                 ...participant,
                 teamPredictions: participant.teamPredictions.map(prediction => {
@@ -102,11 +103,17 @@ export class TeamPredictionService {
                 })
             }
         }));
+    }
 
-        // let db = admin.database();
-        //
-        // let docRef = db.ref(`${predictionId}/teamstand/${roundId}`);
-        // docRef.set(sortedStand);
+    async createRoundStand(competitionId: string, predictionId: string, roundId: string) {
+        const sortedStand = this.getRoundStand(predictionId, roundId);
+
+        let db = admin.database();
+
+        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Team}/${roundId}`);
+
+        docRef.set(sortedStand);
+
         return sortedStand;
     }
 
@@ -126,25 +133,22 @@ export class TeamPredictionService {
             .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
 
-        const sortedStand = this.calculateStand(participants);
+        return this.calculateStand(participants);
+    }
 
-        // let db = admin.database();
-        //
-        // let docRef = db.ref(`${predictionId}/teamstand/totaal`);
-        // docRef.set(sortedStand);
+    async createStand(competitionId: string, predictionId: string): Promise<any[]> {
+        const sortedStand = this.getStand(predictionId);
+
+        let db = admin.database();
+
+        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Team}/totaal`);
+
+        docRef.set(sortedStand);
 
         return sortedStand
     }
 
     isCaptain(prediction, round: Round): boolean {
-        if (prediction.captain) {
-            this.logger.log(round);
-            this.logger.log(prediction);
-            if (prediction.captainTillRound) {
-                this.logger.log(prediction.captainTillRound.startDate);
-            }
-            this.logger.log((prediction.captain && !!prediction.captainTillRound) || (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate));
-        }
         return (prediction.captain && !prediction.captainTillRound) || (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate)
     }
 
