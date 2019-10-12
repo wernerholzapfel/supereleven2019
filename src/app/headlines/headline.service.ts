@@ -19,6 +19,7 @@ export class HeadlineService {
             .createQueryBuilder('headline')
             .leftJoin('headline.competition', 'competition')
             .where('competition.id = :competitionId', {competitionId})
+            .andWhere('headline.isActive')
             .orderBy('headline.updatedDate', 'DESC')
             .getMany();
     }
