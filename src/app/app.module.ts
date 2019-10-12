@@ -66,7 +66,8 @@ export class AppModule {
             {path: '/rankingprediction/competitionid/**', method: RequestMethod.GET},
             {path: '/team-prediction/prediction/**', method: RequestMethod.GET},
             {path: '/question-prediction/prediction/**', method: RequestMethod.GET},
-            {path: '/match-prediction/prediction/**', method: RequestMethod.GET});
+            {path: '/match-prediction/prediction/**', method: RequestMethod.GET},
+            {path: '/participants/loggedIn', method: RequestMethod.GET});
 
         consumer.apply(IsRegistrationClosed).forRoutes(
             {path: '/stand/match/prediction/**', method: RequestMethod.GET},

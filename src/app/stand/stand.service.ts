@@ -35,6 +35,10 @@ export class StandService {
 
         let docRef = db.ref(`${competitionId}/totaalstand/totaal`);
         docRef.set(sortedPositionStand);
+
+        let lastUpdatedref = db.ref(`${competitionId}/lastUpdated`);
+        lastUpdatedref.set({lastUpdated: Date.now()});
+
         return sortedPositionStand;
     }
 

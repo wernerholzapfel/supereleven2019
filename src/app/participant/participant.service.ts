@@ -26,6 +26,14 @@ export class ParticipantService {
             .getOne();
     }
 
+    async getParticipant(firebaseIdentifier: string): Promise<Participant> {
+        return await this.connection
+            .getRepository(Participant)
+            .createQueryBuilder('participant')
+            .where('participant.firebaseIdentifier = :id', {id: firebaseIdentifier})
+            .getOne();
+    }
+
 
     async create(participant: CreateParticipantDto, email: string, uid: string): Promise<Participant> {
         const newParticipant: Participant = Object.assign(participant);
