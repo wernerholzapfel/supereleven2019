@@ -3,7 +3,6 @@ import {TeamPredictionService} from './team-prediction.service';
 import {Teamprediction} from './team-prediction.entity';
 import {CreateTeamPredictionDto} from './create-team-prediction.dto';
 import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
-import {Participant} from '../participant/participant.entity';
 
 @ApiUseTags('team-prediction')
 @Controller('team-prediction')
@@ -24,11 +23,23 @@ export class TeamPredictionController {
         return await this.service.create(createDto, req.user.uid);
     }
 
+    @Post('stand')
+    async createStand(@Req() req, @Body() body: { competitionId: string, predictionId: string }) {
+        return await this.service.createStand(body.competitionId, body.predictionId);
+    }
+
+    @Post('roundstand')
+    async createRoundStand(@Req() req, @Body() body: { competitionId: string, predictionId: string, roundId: string }) {
+        return await this.service.createRoundStand(body.competitionId, body.predictionId, body.roundId);
+    }
+
+    // todo delete
     @Get('prediction/:predictionid/stand')
     async getStand(@Param('predictionid') predictionId, @Req() req,): Promise<any[]> {
         return this.service.getStand(predictionId);
     }
 
+    // todo delete
     @Get('prediction/:predictionid/round/:roundid/stand')
     async getRoundStand(@Param('predictionid') predictionId, @Param('roundid') roundId, @Req() req,): Promise<any[]> {
         return this.service.getRoundStand(predictionId, roundId);

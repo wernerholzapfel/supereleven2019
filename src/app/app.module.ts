@@ -66,7 +66,8 @@ export class AppModule {
             {path: '/rankingprediction/competitionid/**', method: RequestMethod.GET},
             {path: '/team-prediction/prediction/**', method: RequestMethod.GET},
             {path: '/question-prediction/prediction/**', method: RequestMethod.GET},
-            {path: '/match-prediction/prediction/**', method: RequestMethod.GET});
+            {path: '/match-prediction/prediction/**', method: RequestMethod.GET},
+            {path: '/participants/loggedIn', method: RequestMethod.GET});
 
         consumer.apply(IsRegistrationClosed).forRoutes(
             {path: '/stand/match/prediction/**', method: RequestMethod.GET},
@@ -81,16 +82,20 @@ export class AppModule {
         );
             consumer.apply(AdminMiddleware).forRoutes(
             {path: 'competition/**', method: RequestMethod.POST},
-            {path: 'headlines/**', method: RequestMethod.POST},
-            {path: 'notification/**', method: RequestMethod.POST},
-            {path: 'match/**', method: RequestMethod.POST},
+            {path: 'headlines', method: RequestMethod.POST},
+            {path: 'notification', method: RequestMethod.POST},
+            {path: 'match', method: RequestMethod.POST},
             {path: 'player/**', method: RequestMethod.POST},
-            {path: 'predictions/**', method: RequestMethod.POST},
-            {path: 'question/**', method: RequestMethod.POST},
-            {path: 'rankingteam/**', method: RequestMethod.POST},
+            {path: 'predictions', method: RequestMethod.POST},
+            {path: 'question', method: RequestMethod.POST},
+            {path: 'rankingteam', method: RequestMethod.POST},
             {path: 'round/**', method: RequestMethod.POST},
-            {path: 'team/**', method: RequestMethod.POST},
-            {path: 'teamplayer-scores/**', method: RequestMethod.POST},
+            {path: 'team', method: RequestMethod.POST},
+            {path: 'teamplayer-scores', method: RequestMethod.POST},
+            {path: 'team-prediction/stand/**', method: RequestMethod.POST},
+            {path: 'team-prediction/roundstand/**', method: RequestMethod.POST},
+            {path: 'team-player/stats/**', method: RequestMethod.POST},
+            {path: 'team-player/roundstats/**', method: RequestMethod.POST},
         );
 
         // admin.auth().setCustomUserClaims('YWl0nRAHkCOQBqEj6MdG51n9pjT2', {admin: true}).then(() => {

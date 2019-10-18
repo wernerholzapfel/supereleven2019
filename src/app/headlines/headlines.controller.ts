@@ -20,7 +20,7 @@ export class HeadlinesController {
     @Post()
     async create(@Req() req, @Body() createHeadlineDto: CreateHeadlineDto) {
         this.logger.log('post headline');
-        const newHeadline = Object.assign({}, createHeadlineDto, {schrijver: req.user.displayName});
+        const newHeadline = Object.assign({}, createHeadlineDto);
         return await this.headlineService.create(newHeadline);
     }
 }

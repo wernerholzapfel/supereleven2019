@@ -20,6 +20,11 @@ export class ParticipantController {
     async findAll(@Param('participantId') participantId, @Param('competitionId') competitionId): Promise<Participant> {
         return this.participantService.getParticipantPrediction(participantId, competitionId);
     }
+
+    @Get('loggedIn')
+    async getParticipant(@Req() req): Promise<Participant> {
+        return this.participantService.getParticipant(req.user.uid);
+    }
     @Post()
     async create(@Req() req, @Body() createParticipantDto: CreateParticipantDto) {
         this.logger.log('post participant');

@@ -30,6 +30,16 @@ export class RoundService {
             .getOne();
     }
 
+    async getPreviousRounds(): Promise<Round[]> {
+        return await this.connection
+            .getRepository(Round)
+            .createQueryBuilder('round')
+            .where('round.period ::tstzrange @> \'[ ' + new Date().toISOString() + ', ' + new Date().toISOString() + ']\'')
+            .orWhere('\'[ ' + new Date().toISOString() + ', ' + new Date().toISOString() + ']\' ::tstzrange >> round.period')
+            .orderBy('round.period', 'DESC')
+            .getMany();
+    }
+
     async getAll(competitionid: string): Promise<Round[]> {
         return await this.connection
             .getRepository(Round)

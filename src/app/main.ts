@@ -19,6 +19,7 @@ admin.initializeApp({
             client_x509_cert_url: process.env.client_x509_cert_url,
         },
     ),
+    databaseURL: process.env.firebase_databaseURL
 });
 
 const allowCrossDomain = (req, res, next) => {
@@ -29,8 +30,7 @@ const allowCrossDomain = (req, res, next) => {
     // intercept OPTIONS method
     if ('OPTIONS' === req.method) {
         res.sendStatus(200);
-    }
-    else {
+    } else {
         next();
     }
 };
