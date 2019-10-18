@@ -7,6 +7,9 @@ import {Participant} from '../participant/participant.entity';
 import {RoundService} from '../round/round.service';
 import {Observable} from 'rxjs';
 import {Position} from '../team-player/teamplayer.entity';
+import {Round} from '../round/round.entity';
+import admin from 'firebase-admin';
+import {PredictionType} from '../prediction/create-prediction.dto';
 
 @Injectable()
 export class TeamPredictionService {
@@ -16,12 +19,12 @@ export class TeamPredictionService {
     WINSCORE = 2;
     DRAWSCORE = 1;
     YELLOWSCORE = -2;
-    SECNDYELLOWSCORE = 6;
+    SECNDYELLOWSCORE = -6;
     REDSCORE = -8;
     PENALTYMISSED = -4;
     PENALTYSTOPPED = 6;
     OWNGOAL = -4;
-    CLEANSHEET = -2;
+    CLEANSHEET = 2;
 
     constructor(private readonly connection: Connection,
                 @InjectRepository(Teamprediction)
@@ -47,26 +50,71 @@ export class TeamPredictionService {
     }
 
     async getRoundStand(predictionId: string, roundId: string) {
+        const rounds: Round[] = await this.connection.getRepository(Round).createQueryBuilder('round')
+            .leftJoin('round.prediction', 'prediction')
+            .where('prediction.id = :predictionId', {predictionId})
+            .orderBy('round.startDate')
+            .getMany();
+
+        const roundIndex = rounds.findIndex(round => round.id === roundId);
+        const enddate: Date = roundIndex + 1 === rounds.length ? new Date() : rounds[roundIndex + 1].startDate;
+
         const participants: any[] = await this.connection
             .getRepository(Participant)
             .createQueryBuilder('participant')
-            .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId and teamPredictions.round.id = :roundId', {
-                predictionId,
-                roundId
-            })
+            .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions')
             .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
             .leftJoinAndSelect('teamPredictions.round', 'prediction_round')
             .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
             .leftJoinAndSelect('teamPredictions.captainTillRound', 'captainTillRound')
             .leftJoinAndSelect('teamPlayer.player', 'player')
-            .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores')
+            .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores', 'teamplayerscores.round.id = :roundId', {
+                roundId
+            })
             .leftJoinAndSelect('teamplayerscores.round', 'score_round')
             .leftJoinAndSelect('teamPlayer.team', 'team')
+            .where(qb => {
+                const subQuery = qb.subQuery()
+                    .select('round.id')
+                    .from(Round, 'round')
+                    .where('round.startDate <= :startdate', {startdate: rounds[roundIndex].startDate})
+                    .getQuery();
+                return 'prediction_round.id IN ' + subQuery;
+            })
+            .andWhere(sq => {
+                const subQuery2 = sq.subQuery()
+                    .select('round.id')
+                    .from(Round, 'round')
+                    .where('round.startDate = :enddate', {enddate: enddate})
+                    .getQuery();
+                return '(tillRound.id IN ' + subQuery2 + ' OR tillRound.id is null)'
+            })
             .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
 
-        return this.calculateStand(participants);
+        return this.calculateStand(participants.map(participant => {
+            return {
+                ...participant,
+                teamPredictions: participant.teamPredictions.map(prediction => {
+                    return {
+                        ...prediction,
+                        isActive: true
+                    }
+                })
+            }
+        }));
+    }
 
+    async createRoundStand(competitionId: string, predictionId: string, roundId: string) {
+        const sortedStand = await this.getRoundStand(predictionId, roundId);
+
+        let db = admin.database();
+
+        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Team}/${roundId}`);
+
+        docRef.set(sortedStand);
+
+        return sortedStand;
     }
 
     async getStand(predictionId: string): Promise<any[]> {
@@ -86,76 +134,107 @@ export class TeamPredictionService {
             .getMany();
 
         return this.calculateStand(participants);
-
     }
 
-    isCaptain(prediction, round): boolean {
-        return prediction.captain && !!prediction.captainTillRound || prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate
+    async createStand(competitionId: string, predictionId: string): Promise<any[]> {
+        const sortedStand = await this.getStand(predictionId);
+
+        let db = admin.database();
+
+        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Team}/totaal`);
+
+        docRef.set(sortedStand);
+
+        return sortedStand
     }
 
-    calculateStand(participants: any[]) {
-        return participants.map(participant => {
-            return {
-                ...participant,
-                teamPredictions: participant.teamPredictions.map(prediction => {
-                    return {
-                        ...prediction,
-                        teamPlayer: {
-                            ...prediction.teamPlayer,
-                            teamplayerpunten: prediction.teamPlayer.teamplayerscores.map(score => {
-                                const captainFactor = this.isCaptain(prediction, score.round) ? 2 : 1;
-                                return new Date(score.round.startDate) >= new Date(prediction.round.startDate)
-                                && (!prediction.tillRound || new Date(score.round.startDate) < new Date(prediction.tillRound.startDate))
-                                    ? {
-                                        ...score,
-                                        played: score.played * this.PLAYEDSCORE * captainFactor,
-                                        win: score.win * this.WINSCORE * captainFactor,
-                                        draw: score.draw * this.DRAWSCORE * captainFactor,
-                                        yellow: score.yellow * this.YELLOWSCORE * captainFactor,
-                                        secondyellow: score.secondyellow * this.SECNDYELLOWSCORE * captainFactor,
-                                        red: score.red * this.REDSCORE * captainFactor,
-                                        penaltymissed: score.penaltymissed * this.PENALTYMISSED * captainFactor,
-                                        owngoal: score.owngoal * this.OWNGOAL * captainFactor,
-                                        cleansheet: this.determineCleansheet(prediction.teamPlayer.position, score.cleansheet) * captainFactor,
-                                        goals: this.determineGoals(prediction.teamPlayer.position, score.goals) * captainFactor,
-                                        assists: this.determineAssists(prediction.teamPlayer.position, score.assists) * captainFactor,
-                                        penaltystopped: this.determinePenaltyStopped(prediction.teamPlayer.position, score.penaltystopped) * captainFactor,
+    isCaptain(prediction, round: Round): boolean {
+        return (prediction.captain && !prediction.captainTillRound) || (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate)
+    }
+
+    public calculateStand(participants: any[]) {
+        let previousPosition = 1;
+
+        const stand = participants
+            .map(participant => {
+                return {
+                    ...participant,
+                    teamPredictions: participant.teamPredictions.map(prediction => {
+                        return {
+                            ...prediction,
+                            teamPlayer: {
+                                ...prediction.teamPlayer,
+                                teamplayerpunten: prediction.teamPlayer.teamplayerscores.map(score => {
+                                    const captainFactor = this.isCaptain(prediction, score.round) ? 2 : 1;
+                                    return new Date(score.round.startDate) >= new Date(prediction.round.startDate)
+                                    && (!prediction.tillRound || new Date(score.round.startDate) < new Date(prediction.tillRound.startDate))
+                                        ? {
+                                            ...score,
+                                            played: score.played * this.PLAYEDSCORE * captainFactor,
+                                            win: score.win * this.WINSCORE * captainFactor,
+                                            draw: score.draw * this.DRAWSCORE * captainFactor,
+                                            yellow: score.yellow * this.YELLOWSCORE * captainFactor,
+                                            secondyellow: score.secondyellow * this.SECNDYELLOWSCORE * captainFactor,
+                                            red: score.red * this.REDSCORE * captainFactor,
+                                            penaltymissed: score.penaltymissed * this.PENALTYMISSED * captainFactor,
+                                            owngoal: score.owngoal * this.OWNGOAL * captainFactor,
+                                            cleansheet: this.determineCleansheet(prediction.teamPlayer.position, score.cleansheet) * captainFactor,
+                                            goals: this.determineGoals(prediction.teamPlayer.position, score.goals) * captainFactor,
+                                            assists: this.determineAssists(prediction.teamPlayer.position, score.assists) * captainFactor,
+                                            penaltystopped: this.determinePenaltyStopped(prediction.teamPlayer.position, score.penaltystopped) * captainFactor,
+                                        }
+                                        : 0
+                                }).map(punten => {
+                                    return {
+                                        ...punten,
+                                        totaal: Object.entries(punten).reduce(function (total, pair: [string, number]) {
+                                            const [key, value] = pair;
+                                            return typeof value == 'number' ? total + value : total;
+                                        }, 0)
                                     }
-                                    : 0
-                            }).map(punten => {
-                                return {
-                                    ...punten,
-                                    totaal: Object.entries(punten).reduce(function (total, pair: [string, number]) {
-                                        const [key, value] = pair;
-                                        return typeof value == 'number' ? total + value : total;
-                                    }, 0)
-                                }
-                            }),
+                                }),
+                            }
                         }
-                    }
-                }).map(prediction => {
-                    return {
-                        ...prediction,
-                        teamPlayer: {
-                            ...prediction.teamPlayer,
-                            teamplayertotaalpunten: this.calculateTeamplayerTotaalPunten(prediction.teamPlayer.teamplayerpunten),
+                    }).map(prediction => {
+                        return {
+                            ...prediction,
+                            teamPlayer: {
+                                ...prediction.teamPlayer,
+                                teamplayertotaalpunten: this.calculateTeamplayerTotaalPunten(prediction.teamPlayer.teamplayerpunten),
+                            }
                         }
-                    }
-                }).sort((a, b) => {
-                    const x = this.setSortValuePosition(a.teamPlayer.position);
-                    const y = this.setSortValuePosition(b.teamPlayer.position);
-                    return x < y ? -1 : x > y ? 1 : 0
-                })
+                    }).sort((a, b) => {
+                        const x = this.setSortValuePosition(a.teamPlayer.position);
+                        const y = this.setSortValuePosition(b.teamPlayer.position);
+                        return a.isActive < b.isActive ? 1 : a.isActive > b.isActive ? -1 : x < y ? -1 : x > y ? 1 : 0;
+                    })
+                }
+            })
+            .map(participant => {
+                return {
+                    ...participant,
+                    totaalpunten: participant.teamPredictions.reduce((totalPoints, player) => {
+                        return totalPoints + player.teamPlayer.teamplayertotaalpunten.totaal;
+                    }, 0)
+                }
+            })
+            .sort((a, b) => {
+                return a.totaalpunten > b.totaalpunten ? -1 : a.totaalpunten < b.totaalpunten ? 1 : 0;
+            });
+
+        return stand.map((participant, index) => {
+            if (index > 0 && participant.totaalpunten === stand[index - 1].totaalpunten) {
+                return {
+                    ...participant,
+                    position: previousPosition
+                }
+            } else {
+                previousPosition = index + 1;
+                return {
+                    ...participant,
+                    position: index + 1
+                }
             }
-        }).map(participant => {
-            return {
-                ...participant,
-                totaalpunten: participant.teamPredictions.reduce((totalPoints, player) => {
-                    return totalPoints + player.teamPlayer.teamplayertotaalpunten.totaal;
-                }, 0)
-            }
-        }).sort((a, b) => {
-            return a.totaalpunten > b.totaalpunten ? -1 : a.totaalpunten < b.totaalpunten ? 1 : 0;
         });
     }
 
@@ -217,8 +296,6 @@ export class TeamPredictionService {
     }
 
     determineGoals(position: string, goals) {
-        this.logger.log(position);
-        this.logger.log(goals);
         switch (position) {
             case Position.Keeper: {
                 return goals * 10
@@ -268,7 +345,7 @@ export class TeamPredictionService {
         }
     }
 
-    async create(teamPredictions: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
+    async create(newTeam: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
 
         const participant = await this.connection.getRepository(Participant)
             .createQueryBuilder('participant')
@@ -277,7 +354,7 @@ export class TeamPredictionService {
 
         const nextRound = await this.roundService.getNextRound();
 
-        const currentTeam = await this.connection
+        const allPreviousPlayers = await this.connection
             .getRepository(Teamprediction)
             .createQueryBuilder('teamPredictions')
             .leftJoin('teamPredictions.participant', 'participant')
@@ -286,95 +363,91 @@ export class TeamPredictionService {
             .leftJoinAndSelect('teamPlayer.player', 'player')
             .leftJoinAndSelect('teamPlayer.team', 'team')
             .leftJoinAndSelect('teamPredictions.round', 'round')
+            .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
-            .andWhere('prediction.id = :predictionId', {predictionId: teamPredictions[0].prediction.id})
+            .andWhere('prediction.id = :predictionId', {predictionId: newTeam[0].prediction.id})
             .getMany();
 
-        // .getRepository(Participant)
-        // .createQueryBuilder('participant')
-        // .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId', {predictionId: teamPredictions[0].prediction.id})
-        // .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
-        // .leftJoinAndSelect('teamPlayer.player', 'player')
-        // .leftJoinAndSelect('teamPlayer.team', 'team')
-        // .leftJoinAndSelect('teamPredictions.round', 'round')
-        // .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
-        // .getOne();
-
-
-        const previousActivePlayers = currentTeam
+        const previousTeam = allPreviousPlayers
             .filter(currentpl => currentpl.isActive)
-            .map(ap => {
-                if (!teamPredictions.find(tp => tp.teamPlayer.id === ap.teamPlayer.id && ap.isActive)) {
+            .map(CurrentActivePlayer => {
+                if (newTeam.find(tp => tp.teamPlayer.id === CurrentActivePlayer.teamPlayer.id && CurrentActivePlayer.isActive)) {
                     return {
-                        ...ap,
-                        isActive: false
+                        ...CurrentActivePlayer,
                     }
                 } else {
                     return {
-                        ...ap,
+                        ...CurrentActivePlayer,
+                        isActive: false
                     }
                 }
             });
 
 
-        const currentCaptain = currentTeam.find(player => player.captain);
-        const newCaptain = teamPredictions.find(player => player.captain);
+        const currentCaptain = allPreviousPlayers.find(player => player.captain);
+        const newCaptain = !currentCaptain || currentCaptain.teamPlayer.id !== newTeam.find(player => player.captain).teamPlayer.id
+            ? newTeam.find(player => player.captain)
+            : null;
 
-        // filter form with previousactiveplayers so only new players are left over.
-        let newPlayers = teamPredictions.reduce((unique, item) => {
-            return previousActivePlayers
-                .filter(pap => pap.isActive)
-                .find(
-                    ap => ap.teamPlayer.id === item.teamPlayer.id) ?
-                unique :
-                [...unique, item]
+        // filter form with previousteam so only new players are left over.
+        let newPlayers = newTeam.reduce((unique, item) => {
+            return previousTeam
+                .filter(previousPlayer => previousPlayer.isActive)
+                .find(ap => ap.teamPlayer.id === item.teamPlayer.id)
+                ? unique
+                : [...unique, item]
         }, []);
 
+        const existingPlayerThatBecomesCaptain = newCaptain ? allPreviousPlayers.find(player => player.teamPlayer.id === newCaptain.teamPlayer.id) : null;
+
         // get the id's of the previousactiveplayers that needs to be set to inactive.
-        const idsToBeupdated = [...previousActivePlayers
-            .filter(pap => !pap.isActive)
+        const idsToBeSetInActive = [...previousTeam
+            .filter(previousPlayers => !previousPlayers.isActive)
             .map(item => item.id)];
 
-        if (newPlayers.length + currentTeam.length > 17) {
+        const previousNumberOfPlayers = allPreviousPlayers.filter(player => {
+            return !player.tillRound || player.round.id !== player.tillRound.id
+        }).length;
+
+        if (newPlayers.length + previousNumberOfPlayers > 17) {
             throw new HttpException({
-                message: `Je mag nog ${17 - currentTeam.length} transfers doorvoeren`,
+                message: `Je mag nog ${17 - previousNumberOfPlayers} transfers doorvoeren`,
                 statusCode: HttpStatus.FORBIDDEN,
             }, HttpStatus.FORBIDDEN);
         }
 
-        // todo logica netter uitschrijven met name wisselen van captain
-
         return await getManager().transaction(async transactionalEntityManager => {
-            this.logger.log(idsToBeupdated);
-            if (idsToBeupdated.length > 0) //set inactive
+            if (idsToBeSetInActive.length > 0) //set inactive
             {
                 await transactionalEntityManager.getRepository(Teamprediction)
                     .createQueryBuilder()
                     .update(Teamprediction)
                     .set({isActive: false, tillRound: nextRound})
-                    .where('id IN (:...id)', {id: idsToBeupdated})
+                    .where('id IN (:...id)', {id: idsToBeSetInActive})
                     .execute();
             }
-            if (!currentCaptain && newCaptain || newCaptain && currentCaptain.teamPlayer.id !== newCaptain.teamPlayer.id) {
-                //add new captain if he is not in the newplayers? dont understand this
-                newPlayers = newPlayers.find(np => newCaptain && np.teamPlayer.id === newCaptain.teamPlayer.id)
-                    ? [...newPlayers]
-                    : [...newPlayers, newCaptain];
-                // new captain moet toegevoegd worden, maar oude speler niet meer actief
-                await transactionalEntityManager.getRepository(Teamprediction)
-                    .createQueryBuilder()
-                    .update(Teamprediction)
-                    .set({isActive: false})
-                    .where('teamPlayer.id = :newCaptainId', {newCaptainId: newCaptain.teamPlayer.id})
-                    .execute();
-
+            if (newCaptain) {
+                newPlayers = [...newPlayers, newCaptain];
+                if (existingPlayerThatBecomesCaptain) {
+                    // zet oude speler op inactief indien nieuwe captain toegevoegd gaat worden
+                    await transactionalEntityManager.getRepository(Teamprediction)
+                        .createQueryBuilder('teamPrediction')
+                        .update(Teamprediction)
+                        .set({isActive: false, tillRound: nextRound})
+                        .where('"teamPlayerId" = :newCaptainTeamPlayerId', {newCaptainTeamPlayerId: existingPlayerThatBecomesCaptain.teamPlayer.id})
+                        .andWhere('"participantId" = :participantId', {participantId: participant.id})
+                        .execute();
+                }
                 if (currentCaptain) {
                     // current captain wordt captain af
                     await transactionalEntityManager.getRepository(Teamprediction)
-                        .createQueryBuilder()
+                        .createQueryBuilder('teamPrediction')
+                        .leftJoin('teamPrediction.participant', 'participant')
+                        .leftJoin('teamPrediction.teamPlayer', 'teamPlayer')
                         .update(Teamprediction)
                         .set({captain: false, captainTillRound: nextRound})
-                        .where('teamPlayer.id = :currentCaptainId', {currentCaptainId: currentCaptain.teamPlayer.id})
+                        .where('"id" = :currentCaptainId', {currentCaptainId: currentCaptain.id})
+                        .andWhere('"participantId" = :participantId', {participantId: participant.id})
                         .execute();
                 }
             }

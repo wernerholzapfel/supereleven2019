@@ -1,6 +1,16 @@
-import {ForbiddenException, Injectable, Logger, NestMiddleware, UnauthorizedException} from '@nestjs/common';
+import {
+    ForbiddenException,
+    HttpException,
+    HttpStatus,
+    Injectable,
+    Logger,
+    NestMiddleware,
+    UnauthorizedException
+} from '@nestjs/common';
 import 'dotenv/config';
 import * as admin from 'firebase-admin';
+import {getRepository} from 'typeorm';
+import {Competition} from './competitions/competition.entity';
 
 @Injectable()
 export class AddFireBaseUserToRequest implements NestMiddleware {
@@ -37,7 +47,7 @@ export class AddFireBaseUserToRequest implements NestMiddleware {
 export class AdminMiddleware implements NestMiddleware {
     private readonly logger = new Logger('AdminMiddleware', true);
 
-    use (req, res, next)  {
+    use(req, res, next) {
         const extractedToken = getToken(req.headers);
         if (extractedToken) {
             admin.auth().verifyIdToken(extractedToken).then((claims) => {
@@ -45,8 +55,7 @@ export class AdminMiddleware implements NestMiddleware {
                 if (claims.admin === true) {
                     this.logger.log('ik ben admin');
                     next();
-                }
-                else {
+                } else {
                     next(new ForbiddenException('Om wijzigingen door te kunnen voeren moet je admin zijn'));
                 }
             });
@@ -57,15 +66,66 @@ export class AdminMiddleware implements NestMiddleware {
 }
 
 
+@Injectable()
+export class IsRegistrationClosed implements NestMiddleware {
+    private readonly logger = new Logger('AdminMiddleware', true);
+
+    use(req, res, next) {
+        const extractedToken = getToken(req.headers);
+        if (extractedToken) {
+            admin.auth().verifyIdToken(extractedToken).then((claims) => {
+                this.logger.log(claims);
+                if (claims.admin === true) {
+                    next();
+                } else {
+                    this.logger.log('check if registration closed with claim');
+                    return checkIfRegistrationIsClosed()
+                }
+            });
+        } else {
+            this.logger.log('check if registration closed withoutclaim');
+
+            return checkIfRegistrationIsClosed();
+        }
+
+        function checkIfRegistrationIsClosed() {
+            return getRepository(Competition).findOne({isActive: true}).then(competition => {
+                competition.deadline > new Date()
+                    ? next(new HttpException('No-Content', HttpStatus.NO_CONTENT))
+                    : next();
+            });
+        }
+
+    };
+
+}
+
+@Injectable()
+export class CanSavePrediction implements NestMiddleware {
+    private readonly logger = new Logger('CanSavePrediction', true);
+
+    use(req, res, next) {
+        return checkIfRegistrationIsClosed();
+
+        function checkIfRegistrationIsClosed() {
+            return getRepository(Competition).findOne({isActive: true}).then(competition => {
+                competition.deadline < new Date()
+                    ? next(new HttpException('', HttpStatus.FORBIDDEN))
+                    : next();
+            });
+        }
+    }
+}
+
 const getToken = headers => {
-    if (headers && headers.authorization) {
-        const parted = headers.authorization.split(' ');
-        if (parted.length === 2) {
-            return parted[1];
+        if (headers && headers.authorization) {
+            const parted = headers.authorization.split(' ');
+            if (parted.length === 2) {
+                return parted[1];
+            } else {
+                return null;
+            }
         } else {
             return null;
         }
-    } else {
-        return null;
-    }
-};
+    };

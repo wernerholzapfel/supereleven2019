@@ -1,4 +1,13 @@
-import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, Unique} from 'typeorm';
+import {
+    Column,
+    CreateDateColumn,
+    Entity,
+    ManyToOne,
+    OneToMany,
+    PrimaryGeneratedColumn,
+    Unique,
+    UpdateDateColumn
+} from 'typeorm';
 import {Competition} from '../competitions/competition.entity';
 import {Prediction} from '../prediction/prediction.entity';
 import {Team} from '../team/team.entity';
@@ -33,6 +42,9 @@ export class Teamplayer {
     @Column({default: true})
     active: boolean;
 
+    @Column({nullable: true})
+    isSelected: boolean;
+
     @OneToMany(type => Teamprediction, prediction => prediction.teamPlayer)
     teamPredictions: Teamprediction[];
 
@@ -48,6 +60,11 @@ export class Teamplayer {
     @ManyToOne(type => Team, team => team.teamPlayer)
     team: Team;
 
+    @UpdateDateColumn()
+    updatedDate: Date;
+
+    @CreateDateColumn()
+    createdDate: Date;
 }
 
 export interface TeamplayerResponse {

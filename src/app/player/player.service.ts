@@ -62,25 +62,24 @@ export class PlayerService {
         this.logger.log(dbPlayers.length);
         this.logger.log(teamplayers.length);
         this.logger.log(mappedPlayerList.length);
-        return mappedPlayerList;
-        // await this.connection.getRepository(Teamplayer)
-        //     .createQueryBuilder()
-        //     .insert()
-        //     .into(Teamplayer)
-        //     .values(mappedPlayerList)
-        //     .returning(
-        //         '*'
-        //     )
-        //     .execute()
-        //     .catch(
-        //         (err) => {
-        //             throw new HttpException({
-        //                     message: err.message,
-        //                     statusCode: HttpStatus.BAD_REQUEST,
-        //                 }, HttpStatus.BAD_REQUEST
-        //             );
-        //         }
-        //     );
+        return await this.connection.getRepository(Teamplayer)
+            .createQueryBuilder()
+            .insert()
+            .into(Teamplayer)
+            .values(mappedPlayerList)
+            .returning(
+                '*'
+            )
+            .execute()
+            .catch(
+                (err) => {
+                    throw new HttpException({
+                            message: err.message,
+                            statusCode: HttpStatus.BAD_REQUEST,
+                        }, HttpStatus.BAD_REQUEST
+                    );
+                }
+            );
     }
 
     async updatePlayers() {
@@ -173,7 +172,7 @@ export class PlayerService {
                     })
                         .map(squad => {
                             return {
-                                playerReference: squad.id,
+                                playerReference: squad.id ? squad.id : 0,
                                 teamReference: teams.id,
                                 team: teams.shortName,
                                 name: squad.name,

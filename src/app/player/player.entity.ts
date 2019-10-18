@@ -1,4 +1,4 @@
-import {Column, Entity, OneToMany, PrimaryGeneratedColumn, Unique} from 'typeorm';
+import {Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn} from 'typeorm';
 import {Position, Teamplayer} from '../team-player/teamplayer.entity';
 
 @Entity()
@@ -40,6 +40,12 @@ export class Player {
         type: 'text',
     })
     position: string;
+
+    @UpdateDateColumn()
+    updatedDate: Date;
+
+    @CreateDateColumn()
+    createdDate: Date;
 
     @OneToMany(type => Teamplayer, teamplayer => teamplayer.player)
     teamPlayers: Teamplayer[];
