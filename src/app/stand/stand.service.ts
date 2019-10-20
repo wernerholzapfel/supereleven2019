@@ -4,12 +4,14 @@ import {Participant} from '../participant/participant.entity';
 import admin from 'firebase-admin';
 import {TeamPredictionService} from '../team-prediction/team-prediction.service';
 import {PredictionType} from '../prediction/create-prediction.dto';
+import {RankingTeam} from '../ranking-team/rankingTeam.entity';
 
 @Injectable()
 export class StandService {
 
     constructor(private readonly connection: Connection, private teamPredictionService: TeamPredictionService) {
     }
+
     private getSortedPositionStand(sortedStand) {
         let previousPosition = 1;
 
@@ -43,6 +45,8 @@ export class StandService {
     }
 
     async getTotalStand(competitionId: string): Promise<any[]> {
+        const rankingStandMeenemen = false;
+        let rankingStand = [];
         const participants: any[] = await this.connection
             .getRepository(Participant)
             .createQueryBuilder('participant')
@@ -73,20 +77,33 @@ export class StandService {
             }
         });
 
-        const sortedStand = totalstand.map(participant => {
+        if (rankingStandMeenemen) {
+            rankingStand = await this.getRankingStand('0bbf90f1-eff0-4d14-90ea-d8ed6cbd1c2c'); // todo
+        }
+        const stand: any[] = totalstand.map(participant => {
             return {
                 id: participant.id,
                 displayName: participant.displayName,
                 teamName: participant.teamName,
                 totalMatchPoints: participant.totalMatchPoints,
                 totalTeamPoints: participant.totalTeamPoints,
-                totalPoints: participant.totalMatchPoints + participant.totaalpunten
+                totalRankingPoints: rankingStandMeenemen && rankingStand.find(participantR => {
+                    return participantR.id === participant.id
+                }) ? rankingStand.find(participantR => {
+                    return participantR.id === participant.id
+                }).totalPoints : null
             }
-        }).sort((a, b) => {
-            return b.totalPoints - a.totalPoints
-        });
+        }).map(participant => {
+            return {
+                ...participant,
+                totalPoints: participant.totalMatchPoints + participant.totalTeamPoints + participant.totalRankingPoints
+            }
+        })
+            .sort((a, b) => {
+                return b.totalPoints - a.totalPoints
+            });
 
-        return this.getSortedPositionStand(sortedStand)
+        return this.getSortedPositionStand(stand)
     }
 
     async getMatchStand(predictionId: string): Promise<any[]> {
@@ -100,7 +117,7 @@ export class StandService {
             .orderBy('match.date')
             .getMany();
 
-        return participants
+        const stand = participants
             .map(participant => {
                 return {
                     ...participant,
@@ -111,15 +128,109 @@ export class StandService {
             })
             .sort((a, b) => {
                 return b.totalPoints - a.totalPoints
-            })
+            });
+
+        return this.getSortedPositionStand(stand);
+
     }
 
     async createMatchStand(competitionId: string, predictionId: string): Promise<any[]> {
-       const sortedStand = await this.getMatchStand(predictionId);
+        const sortedStand = await this.getMatchStand(predictionId);
         let db = admin.database();
 
         let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Matches}/totaal`);
         docRef.set(sortedStand);
-        return this.getSortedPositionStand(sortedStand);
+        return sortedStand
+    }
+
+    async createRankingStand(competitionId: string, predictionId: string): Promise<any[]> {
+        const sortedStand = await this.getRankingStand(predictionId);
+        let db = admin.database();
+
+        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Ranking}/totaal`);
+        docRef.set(sortedStand);
+        return sortedStand
+    }
+
+    async getRankingStand(predictionId: string): Promise<any[]> {
+        const participants: any = await this.connection
+            .getRepository(Participant)
+            .createQueryBuilder('participant')
+            .leftJoinAndSelect('participant.rankingPredictions', 'rankingPredictions')
+            .leftJoinAndSelect('rankingPredictions.team', 'rankingteam')
+            .leftJoinAndSelect('rankingteam.team', 'team')
+            .leftJoin('rankingPredictions.prediction', 'prediction')
+            .where('prediction.id = :predictionId', {predictionId})
+            .getMany();
+
+        const rankingResults = await this.connection
+            .getRepository(RankingTeam)
+            .createQueryBuilder('rankingTeam')
+            .leftJoin('rankingTeam.prediction', 'prediction')
+            .leftJoinAndSelect('rankingTeam.team', 'team')
+            .where('prediction.id = :predictionId', {predictionId})
+            .getMany();
+
+        const stand = participants
+            .map(participant => {
+                return {
+                    ...participant,
+                    rankingPredictions:
+                        participant.rankingPredictions
+                            .map(rankingPrediction => {
+                                return {
+                                    ...rankingPrediction,
+                                    positionresult: rankingResults.find(rr => {
+                                        return rr.id === rankingPrediction.team.id
+                                    }).position
+                                }
+                            })
+                            .map(rankingPredictionWithResult => {
+                                return {
+                                    ...rankingPredictionWithResult,
+                                    points: this.determineRankingPoints(rankingPredictionWithResult)
+                                }
+                            })
+                }
+            })
+            .map(participant => {
+                return {
+                    ...participant,
+                    rankingPredictions: participant.rankingPredictions.sort((a, b) => {
+                        return a.position - b.position
+                    }),
+                    totalPoints: participant.rankingPredictions.reduce((a, b) => {
+                        return a + b.points
+                    }, 0)
+                }
+            })
+            .sort((a, b) => {
+                return b.totalPoints - a.totalPoints
+            });
+
+        const standWithPosition = this.getSortedPositionStand(stand);
+        return standWithPosition;
+    }
+
+    determineRankingPoints(rankingPrediction: any) {
+        if (!rankingPrediction.positionresult) {
+            return null;
+        }
+        if (rankingPrediction.position === 1 && rankingPrediction.position === rankingPrediction.positionresult) {
+            return 15
+        } else {
+            const positionDifference = (rankingPrediction.position - rankingPrediction.positionresult);
+
+            switch (positionDifference) {
+                case 2 || -2:
+                    return 3;
+                case 1 || -1:
+                    return 5;
+                case 0:
+                    return 10;
+                default:
+                    return 0;
+            }
+        }
     }
 }

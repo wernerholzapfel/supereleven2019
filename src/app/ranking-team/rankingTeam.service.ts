@@ -13,7 +13,20 @@ export class RankingTeamService {
                 private readonly repository: Repository<RankingTeam>,) {
     }
 
-    async getAllByCompetitionId(competitionid): Promise<RankingTeam[]> {
+    async getRankingResultsByCompetitionId(competitionid): Promise<RankingTeam[]> {
+        return await this.connection
+            .getRepository(RankingTeam)
+            .createQueryBuilder('rankingTeam')
+            .leftJoinAndSelect('rankingTeam.competition', 'competition')
+            .leftJoinAndSelect('rankingTeam.prediction', 'prediction')
+            .leftJoinAndSelect('rankingTeam.team', 'team')
+            .where('competition.id = :id', {id: competitionid})
+            .orderBy('rankingTeam.position')
+            .addOrderBy('team.name')
+            .getMany();
+
+    }
+        async getAllByCompetitionId(competitionid): Promise<RankingTeam[]> {
         const dbResult = await this.connection
             .getRepository(RankingTeam)
             .createQueryBuilder('rankingTeam')
@@ -42,7 +55,7 @@ export class RankingTeamService {
         });
     }
 
-    async create(dummy: CreateRankingTeamDto): Promise<RankingTeam> {
+    async create(dummy: CreateRankingTeamDto[]): Promise<RankingTeam[]> {
         return await this.repository.save(dummy)
             .catch((err) => {
                 throw new HttpException({
