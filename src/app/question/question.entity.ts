@@ -2,6 +2,7 @@ import {Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from 'type
 import {Competition} from '../competitions/competition.entity';
 import {Prediction} from '../prediction/prediction.entity';
 import {QuestionPrediction} from '../question-prediction/question-prediction.entity';
+import {Round} from '../round/round.entity';
 
 @Entity()
 export class Question {
@@ -14,8 +15,8 @@ export class Question {
     @Column({nullable: true})
     answer: string;
 
-    @Column({nullable: true})
-    roundId: number;
+    @ManyToOne(type => Round, round => round.questions, {nullable: true})
+    round: Round;
 
     @Column({nullable: true})
     sortId: number;

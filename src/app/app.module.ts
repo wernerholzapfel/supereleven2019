@@ -80,7 +80,7 @@ export class AppModule {
             {path: 'match-prediction/**', method: RequestMethod.POST},
             {path: 'rankingprediction/**', method: RequestMethod.POST},
         );
-            consumer.apply(AdminMiddleware).forRoutes(
+        consumer.apply(AdminMiddleware).forRoutes(
             {path: 'competition/**', method: RequestMethod.POST},
             {path: 'headlines', method: RequestMethod.POST},
             {path: 'notification', method: RequestMethod.POST},
@@ -97,6 +97,8 @@ export class AppModule {
             {path: 'team-player/stats/**', method: RequestMethod.POST},
             {path: 'team-player/roundstats/**', method: RequestMethod.POST},
             {path: 'stand/**', method: RequestMethod.POST},
+            {path: 'question-prediction/question/**', method: RequestMethod.GET},
+            {path: '**', method: RequestMethod.PUT},
         );
 
         // admin.auth().setCustomUserClaims('YWl0nRAHkCOQBqEj6MdG51n9pjT2', {admin: true}).then(() => {

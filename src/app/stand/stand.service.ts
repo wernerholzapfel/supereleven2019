@@ -80,6 +80,8 @@ export class StandService {
         if (rankingStandMeenemen) {
             rankingStand = await this.getRankingStand('0bbf90f1-eff0-4d14-90ea-d8ed6cbd1c2c'); // todo
         }
+
+        const questionstand = await this.getQuestionStand('76626b1e-afeb-4a38-b0df-1f24af5510f9')
         const stand: any[] = totalstand.map(participant => {
             return {
                 id: participant.id,
@@ -91,12 +93,20 @@ export class StandService {
                     return participantR.id === participant.id
                 }) ? rankingStand.find(participantR => {
                     return participantR.id === participant.id
+                }).totalPoints : null,
+                totalQuestionPoints: questionstand.find(participantR => {
+                    return participantR.id === participant.id
+                }) ? questionstand.find(participantR => {
+                    return participantR.id === participant.id
                 }).totalPoints : null
             }
         }).map(participant => {
             return {
                 ...participant,
-                totalPoints: participant.totalMatchPoints + participant.totalTeamPoints + participant.totalRankingPoints
+                totalPoints: participant.totalMatchPoints
+                    + participant.totalTeamPoints
+                    + participant.totalRankingPoints
+                    + participant.totalQuestionPoints
             }
         })
             .sort((a, b) => {
@@ -212,6 +222,41 @@ export class StandService {
         return standWithPosition;
     }
 
+    async createQuestionStand(competitionId: string, predictionId: string): Promise<any[]> {
+        const sortedStand = await this.getQuestionStand(predictionId);
+        let db = admin.database();
+
+        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Questions}/totaal`);
+        docRef.set(sortedStand);
+        return sortedStand
+    }
+
+    async getQuestionStand(predictionId: string): Promise<any[]> {
+        const participants: any = await this.connection
+            .getRepository(Participant)
+            .createQueryBuilder('participant')
+            .leftJoinAndSelect('participant.questionPredictions', 'questionPredictions')
+            .leftJoin('questionPredictions.prediction', 'prediction')
+            .leftJoinAndSelect('questionPredictions.question', 'question')
+            .where('prediction.id = :predictionId', {predictionId})
+            .orderBy('question.sortId')
+            .getMany();
+
+        const stand = participants
+            .map(participant => {
+                return {
+                    ...participant,
+                    totalPoints: participant.questionPredictions.reduce((a, b) => {
+                        return a + b.punten
+                    }, 0)
+                }
+            })
+            .sort((a, b) => {
+                return b.totalPoints - a.totalPoints
+            });
+
+        return this.getSortedPositionStand(stand);
+    }
     determineRankingPoints(rankingPrediction: any) {
         if (!rankingPrediction.positionresult) {
             return null;

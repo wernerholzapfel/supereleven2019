@@ -18,8 +18,15 @@ export class StandController {
     // todo weggooien wordt niet meer gebruikt sinds 4.6.0
     @ApiImplicitParam({name: 'predictionId'})
     @Get('match/prediction/:predictionId')
-    async findAll(@Param('predictionId') predictionId): Promise<any[]> {
+    async getMatchStand(@Param('predictionId') predictionId): Promise<any[]> {
         return this.service.getMatchStand(predictionId);
+    }
+
+    // todo weggooien wordt niet meer gebruikt sinds 4.6.0
+    @ApiImplicitParam({name: 'predictionId'})
+    @Get('question/prediction/:predictionId')
+    async getQuestionStand(@Param('predictionId') predictionId): Promise<any[]> {
+        return this.service.getQuestionStand(predictionId);
     }
 
     // todo weggooien wordt niet meer gebruikt sinds 4.6.0
@@ -45,6 +52,12 @@ export class StandController {
     @Post('ranking/create')
     async createRankingStand(@Req() req, @Body() body: {competitionId: string, predictionId: string}) {
         return this.service.createRankingStand(body.competitionId, body.predictionId);
+    }
+
+    @ApiImplicitParam({name: 'predictionId'})
+    @Post('question/create')
+    async createQuestionStand(@Req() req, @Body() body: {competitionId: string, predictionId: string}) {
+        return this.service.createQuestionStand(body.competitionId, body.predictionId);
     }
 
     @ApiImplicitParam({name: 'competitionId'})
