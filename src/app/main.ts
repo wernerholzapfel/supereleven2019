@@ -2,6 +2,8 @@ import {NestFactory} from '@nestjs/core';
 import {AppModule} from './app.module';
 import * as admin from 'firebase-admin';
 import {DocumentBuilder, SwaggerModule} from '@nestjs/swagger';
+import {ExpressAdapter} from '@nestjs/platform-express';
+import express = require('express');
 
 admin.initializeApp({
     credential: admin.credential.cert({
@@ -36,7 +38,9 @@ const allowCrossDomain = (req, res, next) => {
 };
 
 async function bootstrap() {
-    const app = await NestFactory.create(AppModule);
+    const expressApp = express();
+    const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
+    // const app = await NestFactory.create(AppModule);
     app.use(allowCrossDomain);
     const options = new DocumentBuilder()
         .setTitle('Super eleven')
