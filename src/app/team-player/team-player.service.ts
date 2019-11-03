@@ -86,7 +86,7 @@ export class TeamPlayerService {
     }
 
     async createStats(competitionId: string, predictionId: string) {
-        const stats = await this.getAllByPredictionId(predictionId);
+        const stats = await this.getStats(predictionId);
         let db = admin.database();
 
         let docRef = db.ref(`${competitionId}/statistieken/${predictionId}/totaal`);

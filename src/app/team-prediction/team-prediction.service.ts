@@ -210,7 +210,9 @@ export class TeamPredictionService {
                     })
                 }
             })
-            .map(participant => {
+
+            const totaalstand =
+            stand.map(participant => {
                 return {
                     ...participant,
                     totaalpunten: participant.teamPredictions.reduce((totalPoints, player) => {
@@ -222,7 +224,7 @@ export class TeamPredictionService {
                 return a.totaalpunten > b.totaalpunten ? -1 : a.totaalpunten < b.totaalpunten ? 1 : 0;
             });
 
-        return stand.map((participant, index) => {
+        return totaalstand.map((participant, index) => {
             if (index > 0 && participant.totaalpunten === stand[index - 1].totaalpunten) {
                 return {
                     ...participant,

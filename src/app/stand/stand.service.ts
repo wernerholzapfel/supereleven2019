@@ -44,76 +44,100 @@ export class StandService {
         return sortedPositionStand;
     }
 
-    async getTotalStand(competitionId: string): Promise<any[]> {
-        const rankingStandMeenemen = false;
+    async getTotalStand(competitionId: string): Promise<any> {
+        // const roundId = '3eeec255-87ea-4a5c-b05d-36e6b980b32b';
+        const teamPredictionId = 'ca6e325f-f711-4c9d-ad5d-c9ade8cd522f';
+        const matchPredictionId = '6e15638c-39ac-44ea-9ec9-d5e49e9ca9b0';
+        const rankingPredictionId = '0bbf90f1-eff0-4d14-90ea-d8ed6cbd1c2c';
+        const questionsPredictionId = '76626b1e-afeb-4a38-b0df-1f24af5510f9';
+        let teamStand = [];
+        let questionsStand = [];
         let rankingStand = [];
-        const participants: any[] = await this.connection
-            .getRepository(Participant)
-            .createQueryBuilder('participant')
-            .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.competition.id = :competitionId', {competitionId})
-            .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
-            .leftJoinAndSelect('teamPredictions.round', 'prediction_round')
-            .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
-            .leftJoinAndSelect('teamPredictions.captainTillRound', 'captainTillRound')
-            .leftJoinAndSelect('teamPlayer.player', 'player')
-            .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores')
-            .leftJoinAndSelect('teamplayerscores.round', 'score_round')
-            .leftJoinAndSelect('teamPlayer.team', 'team')
-            .leftJoinAndSelect('participant.matchPredictions', 'matchPredictions')
-            .leftJoin('matchPredictions.competition', 'competition')
-            .leftJoinAndSelect('matchPredictions.match', 'match')
-            .where('competition.id = :competitionId', {competitionId})
-            .orderBy('teamPredictions.isActive', 'DESC')
-            .getMany();
+        let matchStand = [];
 
-        const teamStand = this.teamPredictionService.calculateStand(participants);
-        let totalstand = teamStand.map(participant => {
-            return {
-                ...participant,
-                totalTeamPoints: participant.totaalpunten,
-                totalMatchPoints: participant.matchPredictions.reduce((a, b) => {
-                    return a + b.punten
-                }, 0),
-            }
+        let db = admin.database();
+        let team = db.ref(`${competitionId}/${teamPredictionId}/${PredictionType.Team}/totaal`);
+
+        let matches = db.ref(`${competitionId}/${matchPredictionId}/${PredictionType.Matches}/totaal`);
+        let ranking = db.ref(`${competitionId}/${rankingPredictionId}/${PredictionType.Ranking}/totaal`);
+        let questions = db.ref(`${competitionId}/${questionsPredictionId}/${PredictionType.Questions}/totaal`);
+
+        await matches.once('value', async function (snapshot) {
+            snapshot.val().forEach(matches => {
+                // @ts-ignore
+                matchStand.push({
+                    id: matches.id,
+                    displayName: matches.displayName,
+                    totalPoints: matches.totalPoints
+                })
+            });
+        }, function (errorObject) {
+            console.log('The read failed: ' + errorObject.code);
+            return errorObject;
         });
 
-        if (rankingStandMeenemen) {
-            rankingStand = await this.getRankingStand('0bbf90f1-eff0-4d14-90ea-d8ed6cbd1c2c'); // todo
-        }
+        await ranking.once('value', async function (snapshot) {
+            snapshot.val().forEach(ranking => {
+                // @ts-ignore
+                rankingStand.push({
+                    id: ranking.id,
+                    displayName: ranking.displayName,
+                    totalPoints: ranking.totalPoints
+                })
+            });
+        }, function (errorObject) {
+            console.log('The read failed: ' + errorObject.code);
+            return errorObject;
+        });
 
-        const questionstand = await this.getQuestionStand('76626b1e-afeb-4a38-b0df-1f24af5510f9')
-        const stand: any[] = totalstand.map(participant => {
-            return {
-                id: participant.id,
-                displayName: participant.displayName,
-                teamName: participant.teamName,
-                totalMatchPoints: participant.totalMatchPoints,
-                totalTeamPoints: participant.totalTeamPoints,
-                totalRankingPoints: rankingStandMeenemen && rankingStand.find(participantR => {
-                    return participantR.id === participant.id
-                }) ? rankingStand.find(participantR => {
-                    return participantR.id === participant.id
-                }).totalPoints : null,
-                totalQuestionPoints: questionstand.find(participantR => {
-                    return participantR.id === participant.id
-                }) ? questionstand.find(participantR => {
-                    return participantR.id === participant.id
-                }).totalPoints : null
-            }
-        }).map(participant => {
-            return {
-                ...participant,
-                totalPoints: participant.totalMatchPoints
-                    + participant.totalTeamPoints
-                    + participant.totalRankingPoints
-                    + participant.totalQuestionPoints
-            }
-        })
-            .sort((a, b) => {
-                return b.totalPoints - a.totalPoints
+        await questions.once('value', async function (snapshot) {
+            snapshot.val().forEach(question => {
+                // @ts-ignore
+                questionsStand.push({
+                    id: question.id,
+                    displayName: question.displayName,
+                    totalPoints: question.totalPoints
+                })
+            });
+        }, function (errorObject) {
+            console.log('The read failed: ' + errorObject.code);
+            return errorObject;
+        });
+
+
+        await team.once('value', async function (snapshot) {
+            const getPoints = function (stand: any[], participantId: any) {
+                return stand.find(item => {
+                    return item.id === participantId
+                }) ? stand.find(item => {
+                    return item.id === participantId
+                }).totalPoints : 0;
+            };
+
+            snapshot.val().forEach(childsnapShot => {
+                const matchPoints = getPoints(matchStand, childsnapShot.id);
+                const questionPoints = getPoints(questionsStand, childsnapShot.id);
+                const rankingPoints = getPoints(rankingStand, childsnapShot.id);
+
+                teamStand.push({
+                    id: childsnapShot.id,
+                    displayName: childsnapShot.displayName,
+                    totalTeamPoints: childsnapShot.totaalpunten,
+                    totalMatchPoints: matchPoints,
+                    totalQuestionsPoints: questionPoints,
+                    totalRankingPoints: rankingPoints,
+                    totalPoints: childsnapShot.totaalpunten + matchPoints + questionPoints + rankingPoints
+                });
+            }, function (errorObject) {
+                console.log('The read failed: ' + errorObject.code);
+                return errorObject;
             });
 
-        return this.getSortedPositionStand(stand)
+        });
+
+        return this.getSortedPositionStand(teamStand.sort((a, b) => {
+            return b.totalPoints - a.totalPoints
+        }));
     }
 
     async getMatchStand(predictionId: string): Promise<any[]> {
@@ -257,6 +281,7 @@ export class StandService {
 
         return this.getSortedPositionStand(stand);
     }
+
     determineRankingPoints(rankingPrediction: any) {
         if (!rankingPrediction.positionresult) {
             return null;
