@@ -4,6 +4,8 @@ import {InjectRepository} from '@nestjs/typeorm';
 import {Teamplayer, TeamplayerResponse} from './teamplayer.entity';
 import {TeamPredictionService} from '../team-prediction/team-prediction.service';
 import admin from 'firebase-admin';
+import {Round} from '../round/round.entity';
+import {Teamprediction} from '../team-prediction/team-prediction.entity';
 
 @Injectable()
 export class TeamPlayerService {
@@ -172,6 +174,13 @@ export class TeamPlayerService {
             .leftJoinAndSelect('teamplayers.teamplayerscores', 'teamplayerscores', 'teamplayerscores.round = :roundId', {roundId})
             .leftJoinAndSelect('teamplayerscores.round', 'round')
             .where('prediction.id = :id', {id: predictionId})
+            .andWhere(sq => {
+                const subQuery = sq.subQuery()
+                    .select('teamprediction."teamPlayerId"')
+                    .from(Teamprediction, 'teamprediction')
+                    .getQuery();
+                return '(teamplayers.id IN ' + subQuery + ')'
+            })
             .orderBy('team.name')
             .addOrderBy('player.position')
             .addOrderBy('player.name')
