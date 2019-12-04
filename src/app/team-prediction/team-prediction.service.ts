@@ -386,7 +386,7 @@ export class TeamPredictionService {
             });
 
 
-        const currentCaptain = allPreviousPlayers.find(player => player.captain);
+        const currentCaptain = allPreviousPlayers.find(player => player.captain && player.isActive);
         const newCaptain = !currentCaptain || currentCaptain.teamPlayer.id !== newTeam.find(player => player.captain).teamPlayer.id
             ? newTeam.find(player => player.captain)
             : null;
@@ -429,7 +429,8 @@ export class TeamPredictionService {
                     .execute();
             }
             if (newCaptain) {
-                newPlayers = [...newPlayers, newCaptain];
+                newPlayers = existingPlayerThatBecomesCaptain ? [...newPlayers, newCaptain] : [...newPlayers];
+
                 if (existingPlayerThatBecomesCaptain) {
                     // zet oude speler op inactief indien nieuwe captain toegevoegd gaat worden
                     await transactionalEntityManager.getRepository(Teamprediction)
