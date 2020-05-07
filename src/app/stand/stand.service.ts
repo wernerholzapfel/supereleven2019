@@ -292,9 +292,11 @@ export class StandService {
             const positionDifference = (rankingPrediction.position - rankingPrediction.positionresult);
 
             switch (positionDifference) {
-                case 2 || -2:
+                case 2:
+                case -2:
                     return 3;
-                case 1 || -1:
+                case 1:
+                case -1:
                     return 5;
                 case 0:
                     return 10;
