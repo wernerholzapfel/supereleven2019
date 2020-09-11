@@ -41,6 +41,9 @@ export class Player {
     })
     position: string;
 
+    @Column({default: false})
+    isDeleted: boolean;
+
     @UpdateDateColumn()
     updatedDate: Date;
 
