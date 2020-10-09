@@ -1,14 +1,18 @@
-import {Body, Controller, Get, Param, Post, Req} from '@nestjs/common';
+import {Body, Controller, Get, Param, Post, Put, Req} from '@nestjs/common';
 import {TeamPlayerService} from './team-player.service';
 import {Teamplayer, TeamplayerResponse} from './teamplayer.entity';
 import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
 import admin from 'firebase-admin';
-import DataSnapshot = admin.database.DataSnapshot;
 
 @ApiUseTags('team-player')
 @Controller('team-player')
 export class TeamPlayerController {
     constructor(private readonly service: TeamPlayerService) {
+    }
+
+    @Put(':playerId')
+    async updatePlayer(@Param('playerId') playerId, @Body() teamplayer: Teamplayer) {
+        return this.service.updatePlayer(playerId, teamplayer);
     }
 
     @ApiImplicitParam({name: 'predictionid'})
@@ -22,6 +26,7 @@ export class TeamPlayerController {
     async getStatsForRound(@Param('predictionid') predictionId, @Param('roundid') roundId): Promise<any[]> {
         return this.service.getStatsForRound(predictionId, roundId);
     }
+
     @ApiImplicitParam({name: 'roundid'})
     @Get('prediction/:predictionid/round/:roundid')
     async findAllForRoundId(@Param('predictionid') predictionId, @Param('roundid') roundId): Promise<TeamplayerResponse[]> {

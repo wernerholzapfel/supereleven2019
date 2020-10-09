@@ -94,6 +94,7 @@ export class AppModule {
             {path: 'teamplayer-scores', method: RequestMethod.POST},
             {path: 'team-prediction/stand/**', method: RequestMethod.POST},
             {path: 'team-prediction/roundstand/**', method: RequestMethod.POST},
+            {path: 'team-player/**', method: RequestMethod.PUT},
             {path: 'team-player/stats/**', method: RequestMethod.POST},
             {path: 'team-player/roundstats/**', method: RequestMethod.POST},
             {path: 'stand/**', method: RequestMethod.POST},
