@@ -6,7 +6,7 @@ import {CreateTeamPredictionDto} from './create-team-prediction.dto';
 import {Participant} from '../participant/participant.entity';
 import {RoundService} from '../round/round.service';
 import {Observable} from 'rxjs';
-import {Position} from '../team-player/teamplayer.entity';
+import {Position, Teamplayer} from '../team-player/teamplayer.entity';
 import {Round} from '../round/round.entity';
 import admin from 'firebase-admin';
 import {PredictionType} from '../prediction/create-prediction.dto';
@@ -478,6 +478,14 @@ export class TeamPredictionService {
                         .andWhere('"participantId" = :participantId', {participantId: participant.id})
                         .execute();
                 }
+
+                await transactionalEntityManager.getRepository(Teamplayer)
+                    .createQueryBuilder('teamplayer')
+                    .update(Teamplayer)
+                    .set({isSelected: true})
+                    .where('"id" IN (:...teamplayerIds)',
+                        {teamplayerIds: newPlayers.map(np => np.teamPlayer.id)})
+                    .execute();
             }
             return await transactionalEntityManager.getRepository(Teamprediction)
                 .save([
