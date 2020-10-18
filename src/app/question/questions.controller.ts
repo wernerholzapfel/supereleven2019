@@ -19,7 +19,7 @@ export class QuestionsController {
 
     @Post()
     async create(@Req() req, @Body() createQuestionDto: CreateQuestionDto[]) {
-        return await this.service.create(createQuestionDto)
+        return await this.service.create(createQuestionDto);
     }
 
     @ApiImplicitParam({name: 'questionid'})

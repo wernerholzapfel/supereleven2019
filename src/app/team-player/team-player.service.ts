@@ -183,6 +183,7 @@ export class TeamPlayerService {
             .leftJoinAndSelect('teamplayers.teamplayerscores', 'teamplayerscores', 'teamplayerscores.round = :roundId', {roundId})
             .leftJoinAndSelect('teamplayerscores.round', 'round')
             .where('prediction.id = :id', {id: predictionId})
+            .andWhere('teamplayers.isSelected')
             .orderBy('team.name')
             .addOrderBy('player.position')
             .addOrderBy('player.name')

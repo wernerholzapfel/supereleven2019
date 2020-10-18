@@ -345,12 +345,38 @@ export class TeamPredictionService {
         }
     }
 
+    async getNumberOfPossibleTransfers(predictionId: string, firebaseIdentifier: string): Promise<{ numberOfPossibleTransfers: number }> {
+
+        const allPreviousPlayers = await this.connection
+            .getRepository(Teamprediction)
+            .createQueryBuilder('teamPredictions')
+            .leftJoin('teamPredictions.participant', 'participant')
+            .leftJoin('teamPredictions.prediction', 'prediction')
+            .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+            .leftJoinAndSelect('teamPlayer.player', 'player')
+            .leftJoinAndSelect('teamPlayer.team', 'team')
+            .leftJoinAndSelect('teamPredictions.round', 'round')
+            .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
+            .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+            .andWhere('prediction.id = :predictionId', {predictionId})
+            .getMany();
+
+        const previousNumberOfPlayers = allPreviousPlayers.filter(player => {
+            return !player.tillRound || player.round.id !== player.tillRound.id;
+        }).length;
+
+        return {numberOfPossibleTransfers: 17 - previousNumberOfPlayers};
+
+    }
+
     async create(newTeam: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
 
         const participant = await this.connection.getRepository(Participant)
             .createQueryBuilder('participant')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
             .getOne();
+
+        // throw participant not found?
 
         const nextRound = await this.roundService.getNextRound();
 
