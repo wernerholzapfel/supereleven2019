@@ -1,4 +1,4 @@
-import {Injectable} from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
 import {Connection} from 'typeorm';
 import {Participant} from '../participant/participant.entity';
 import admin from 'firebase-admin';
@@ -8,37 +8,39 @@ import {RankingTeam} from '../ranking-team/rankingTeam.entity';
 
 @Injectable()
 export class StandService {
+    private readonly logger = new Logger('StandService', true);
 
     constructor(private readonly connection: Connection, private teamPredictionService: TeamPredictionService) {
     }
 
     private getSortedPositionStand(sortedStand) {
+        this.logger.log('getSortedPositionStand');
         let previousPosition = 1;
 
         return sortedStand.map((participant, index) => {
-            if (index > 0 && participant.totalPoints === sortedStand[index - 1].totalPoints) {
+            if (index > 0 && participant && participant.totalPoints === sortedStand[index - 1].totalPoints) {
                 return {
                     ...participant,
-                    position: previousPosition
-                }
+                    position: previousPosition,
+                };
             } else {
                 previousPosition = index + 1;
                 return {
                     ...participant,
-                    position: index + 1
-                }
+                    position: index + 1,
+                };
             }
         });
     }
 
     async createTotalStand(competitionId: string): Promise<any[]> {
         const sortedPositionStand = await this.getTotalStand(competitionId);
-        let db = admin.database();
+        const db = admin.database();
 
-        let docRef = db.ref(`${competitionId}/totaalstand/totaal`);
+        const docRef = db.ref(`${competitionId}/totaalstand/totaal`);
         docRef.set(sortedPositionStand);
 
-        let lastUpdatedref = db.ref(`${competitionId}/lastUpdated`);
+        const lastUpdatedref = db.ref(`${competitionId}/lastUpdated`);
         lastUpdatedref.set({lastUpdated: Date.now()});
 
         return sortedPositionStand;
@@ -67,21 +69,21 @@ export class StandService {
             .getMany();
 
         const teamStand = this.teamPredictionService.calculateStand(participants);
-        let totalstand = teamStand.map(participant => {
+        const totalstand = teamStand.map(participant => {
             return {
                 ...participant,
                 totalTeamPoints: participant.totaalpunten,
                 totalMatchPoints: participant.matchPredictions.reduce((a, b) => {
-                    return a + b.punten
+                    return a + b.punten;
                 }, 0),
-            }
+            };
         });
 
         if (rankingStandMeenemen) {
             rankingStand = await this.getRankingStand('0bbf90f1-eff0-4d14-90ea-d8ed6cbd1c2c'); // todo
         }
 
-        const questionstand = await this.getQuestionStand('76626b1e-afeb-4a38-b0df-1f24af5510f9')
+        const questionstand = await this.getQuestionStand('76626b1e-afeb-4a38-b0df-1f24af5510f9');
         const stand: any[] = totalstand.map(participant => {
             return {
                 id: participant.id,
@@ -90,33 +92,35 @@ export class StandService {
                 totalMatchPoints: participant.totalMatchPoints,
                 totalTeamPoints: participant.totalTeamPoints,
                 totalRankingPoints: rankingStandMeenemen && rankingStand.find(participantR => {
-                    return participantR.id === participant.id
+                    return participantR.id === participant.id;
                 }) ? rankingStand.find(participantR => {
-                    return participantR.id === participant.id
+                    return participantR.id === participant.id;
                 }).totalPoints : null,
                 totalQuestionPoints: questionstand.find(participantR => {
-                    return participantR.id === participant.id
+                    return participantR.id === participant.id;
                 }) ? questionstand.find(participantR => {
-                    return participantR.id === participant.id
-                }).totalPoints : null
-            }
+                    return participantR.id === participant.id;
+                }).totalPoints : null,
+            };
         }).map(participant => {
             return {
                 ...participant,
                 totalPoints: participant.totalMatchPoints
                     + participant.totalTeamPoints
                     + participant.totalRankingPoints
-                    + participant.totalQuestionPoints
-            }
+                    + participant.totalQuestionPoints,
+            };
         })
             .sort((a, b) => {
-                return b.totalPoints - a.totalPoints
+                return b.totalPoints - a.totalPoints;
             });
 
-        return this.getSortedPositionStand(stand)
+        return this.getSortedPositionStand(stand);
     }
 
     async getMatchStand(predictionId: string): Promise<any[]> {
+        this.logger.log('getMatchStand');
+
         const participants: any = await this.connection
             .getRepository(Participant)
             .createQueryBuilder('participant')
@@ -127,17 +131,18 @@ export class StandService {
             .orderBy('match.date')
             .getMany();
 
+        this.logger.log('aantal participants: ' + participants.length());
         const stand = participants
             .map(participant => {
                 return {
                     ...participant,
                     totalPoints: participant.matchPredictions.reduce((a, b) => {
-                        return a + b.punten
-                    }, 0)
-                }
+                        return a + b.punten;
+                    }, 0),
+                };
             })
             .sort((a, b) => {
-                return b.totalPoints - a.totalPoints
+                return b.totalPoints - a.totalPoints;
             });
 
         return this.getSortedPositionStand(stand);
@@ -145,21 +150,22 @@ export class StandService {
     }
 
     async createMatchStand(competitionId: string, predictionId: string): Promise<any[]> {
+        this.logger.log('createMatchStand');
         const sortedStand = await this.getMatchStand(predictionId);
-        let db = admin.database();
+        const db = admin.database();
 
-        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Matches}/totaal`);
+        const docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Matches}/totaal`);
         docRef.set(sortedStand);
-        return sortedStand
+        return sortedStand;
     }
 
     async createRankingStand(competitionId: string, predictionId: string): Promise<any[]> {
         const sortedStand = await this.getRankingStand(predictionId);
-        let db = admin.database();
+        const db = admin.database();
 
-        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Ranking}/totaal`);
+        const docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Ranking}/totaal`);
         docRef.set(sortedStand);
-        return sortedStand
+        return sortedStand;
     }
 
     async getRankingStand(predictionId: string): Promise<any[]> {
@@ -191,31 +197,31 @@ export class StandService {
                                 return {
                                     ...rankingPrediction,
                                     positionresult: rankingResults.find(rr => {
-                                        return rr.id === rankingPrediction.team.id
-                                    }).position
-                                }
+                                        return rr.id === rankingPrediction.team.id;
+                                    }).position,
+                                };
                             })
                             .map(rankingPredictionWithResult => {
                                 return {
                                     ...rankingPredictionWithResult,
-                                    points: this.determineRankingPoints(rankingPredictionWithResult)
-                                }
-                            })
-                }
+                                    points: this.determineRankingPoints(rankingPredictionWithResult),
+                                };
+                            }),
+                };
             })
             .map(participant => {
                 return {
                     ...participant,
                     rankingPredictions: participant.rankingPredictions.sort((a, b) => {
-                        return a.position - b.position
+                        return a.position - b.position;
                     }),
                     totalPoints: participant.rankingPredictions.reduce((a, b) => {
-                        return a + b.points
-                    }, 0)
-                }
+                        return a + b.points;
+                    }, 0),
+                };
             })
             .sort((a, b) => {
-                return b.totalPoints - a.totalPoints
+                return b.totalPoints - a.totalPoints;
             });
 
         const standWithPosition = this.getSortedPositionStand(stand);
@@ -224,11 +230,11 @@ export class StandService {
 
     async createQuestionStand(competitionId: string, predictionId: string): Promise<any[]> {
         const sortedStand = await this.getQuestionStand(predictionId);
-        let db = admin.database();
+        const db = admin.database();
 
-        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Questions}/totaal`);
+        const docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Questions}/totaal`);
         docRef.set(sortedStand);
-        return sortedStand
+        return sortedStand;
     }
 
     async getQuestionStand(predictionId: string): Promise<any[]> {
@@ -247,22 +253,23 @@ export class StandService {
                 return {
                     ...participant,
                     totalPoints: participant.questionPredictions.reduce((a, b) => {
-                        return a + b.punten
-                    }, 0)
-                }
+                        return a + b.punten;
+                    }, 0),
+                };
             })
             .sort((a, b) => {
-                return b.totalPoints - a.totalPoints
+                return b.totalPoints - a.totalPoints;
             });
 
         return this.getSortedPositionStand(stand);
     }
+
     determineRankingPoints(rankingPrediction: any) {
         if (!rankingPrediction.positionresult) {
             return null;
         }
         if (rankingPrediction.position === 1 && rankingPrediction.position === rankingPrediction.positionresult) {
-            return 15
+            return 15;
         } else {
             const positionDifference = (rankingPrediction.position - rankingPrediction.positionresult);
 

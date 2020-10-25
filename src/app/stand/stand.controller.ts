@@ -1,11 +1,6 @@
 import {Body, Controller, Get, Logger, Param, Post, Req} from '@nestjs/common';
 import {ApiImplicitParam, ApiUseTags} from '@nestjs/swagger';
 import {StandService} from './stand.service';
-import admin from 'firebase-admin';
-import DataSnapshot = admin.database.DataSnapshot;
-import {CreateHeadlineDto} from '../headlines/create-headline.dto';
-import {Prediction} from '../prediction/prediction.entity';
-import {Competition} from '../competitions/competition.entity';
 
 @ApiUseTags('stand')
 @Controller('stand')
@@ -42,6 +37,7 @@ export class StandController {
     async getTotalStand(@Param('competitionId') competitionId): Promise<any> {
         return this.service.getTotalStand(competitionId);
     }
+
     @ApiImplicitParam({name: 'predictionId'})
     @Post('match/create')
     async createMatchStand(@Req() req, @Body() body: {competitionId: string, predictionId: string}) {
