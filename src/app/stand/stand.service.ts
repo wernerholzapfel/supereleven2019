@@ -35,13 +35,13 @@ export class StandService {
 
     async createTotalStand(competitionId: string): Promise<any[]> {
         const sortedPositionStand = await this.getTotalStand(competitionId);
-        const db = admin.database();
-
-        const docRef = db.ref(`${competitionId}/totaalstand/totaal`);
-        docRef.set(sortedPositionStand);
-
-        const lastUpdatedref = db.ref(`${competitionId}/lastUpdated`);
-        lastUpdatedref.set({lastUpdated: Date.now()});
+        // const db = admin.database();
+        //
+        // const docRef = db.ref(`${competitionId}/totaalstand/totaal`);
+        // docRef.set(sortedPositionStand);
+        //
+        // const lastUpdatedref = db.ref(`${competitionId}/lastUpdated`);
+        // lastUpdatedref.set({lastUpdated: Date.now()});
 
         return sortedPositionStand;
     }
@@ -68,7 +68,7 @@ export class StandService {
             .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
 
-        const teamStand = this.teamPredictionService.calculateStand(participants);
+        const teamStand = await this.teamPredictionService.calculateStand(participants);
         const totalstand = teamStand.map(participant => {
             return {
                 ...participant,
@@ -80,10 +80,10 @@ export class StandService {
         });
 
         if (rankingStandMeenemen) {
-            rankingStand = await this.getRankingStand('0bbf90f1-eff0-4d14-90ea-d8ed6cbd1c2c'); // todo
+            rankingStand = await this.getRankingStand('ca10d47a-b7a3-4266-b5dc-a1e42d7e3403'); // todo
         }
 
-        const questionstand = await this.getQuestionStand('76626b1e-afeb-4a38-b0df-1f24af5510f9');
+        const questionstand = await this.getQuestionStand('2d6b5514-5375-4800-ae87-9072d1644dfa');
         const stand: any[] = totalstand.map(participant => {
             return {
                 id: participant.id,
@@ -151,12 +151,13 @@ export class StandService {
 
     async createMatchStand(competitionId: string, predictionId: string): Promise<any[]> {
         this.logger.log('createMatchStand');
-        const sortedStand = await this.getMatchStand(predictionId);
+        // const sortedStand = await this.getMatchStand(predictionId);
         // const db = admin.database();
         //
         // const docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Matches}/totaal`);
         // docRef.set(sortedStand);
-        return sortedStand;
+        // return sortedStand;
+        return [];
     }
 
     async createRankingStand(competitionId: string, predictionId: string): Promise<any[]> {
