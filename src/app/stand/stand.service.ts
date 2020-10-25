@@ -152,10 +152,10 @@ export class StandService {
     async createMatchStand(competitionId: string, predictionId: string): Promise<any[]> {
         this.logger.log('createMatchStand');
         const sortedStand = await this.getMatchStand(predictionId);
-        const db = admin.database();
-
-        const docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Matches}/totaal`);
-        docRef.set(sortedStand);
+        // const db = admin.database();
+        //
+        // const docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Matches}/totaal`);
+        // docRef.set(sortedStand);
         return sortedStand;
     }
 
