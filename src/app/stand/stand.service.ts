@@ -131,7 +131,7 @@ export class StandService {
             .orderBy('match.date')
             .getMany();
 
-        this.logger.log('aantal participants: ' + participants.length());
+        this.logger.log('aantal participants: ' + participants.length);
         const stand = participants
             .map(participant => {
                 return {
