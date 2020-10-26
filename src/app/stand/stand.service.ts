@@ -46,7 +46,7 @@ export class StandService {
         return sortedPositionStand;
     }
 
-    async getTotalStandFB(competitionId: string): Promise<any> {
+    async getTotalStand(competitionId: string): Promise<any> {
         this.logger.log('getTotalStandFB start');
         let totalstand = [];
         let questionStand = [];
@@ -98,92 +98,7 @@ export class StandService {
             .sort((a, b) => {
                 return b.totalPoints - a.totalPoints;
             });
-        return totalstand;
-    }
-
-
-    async getTotalStand(competitionId: string): Promise<any[]> {
-        this.logger.log('getTotalStand start');
-        const rankingStandMeenemen = false;
-        let rankingStand = [];
-        const participants: any[] = await this.connection
-            .getRepository(Participant)
-            .createQueryBuilder('participant')
-            .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.competition.id = :competitionId', {competitionId})
-            .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
-            .leftJoinAndSelect('teamPredictions.round', 'prediction_round')
-            .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
-            .leftJoinAndSelect('teamPredictions.captainTillRound', 'captainTillRound')
-            .leftJoinAndSelect('teamPlayer.player', 'player')
-            .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores')
-            .leftJoinAndSelect('teamplayerscores.round', 'score_round')
-            .leftJoinAndSelect('teamPlayer.team', 'team')
-            .leftJoinAndSelect('participant.matchPredictions', 'matchPredictions')
-            .leftJoin('matchPredictions.competition', 'competition')
-            .leftJoinAndSelect('matchPredictions.match', 'match')
-            .where('competition.id = :competitionId', {competitionId})
-            .orderBy('teamPredictions.isActive', 'DESC')
-            .getMany();
-
-        this.logger.log('aantal participants: ' + participants.length);
-
-        this.logger.log('calculatesTand');
-        const teamStand = await this.teamPredictionService.calculateStand(participants);
-        this.logger.log('calculatesTand done');
-
-        const totalstand = teamStand.map(participant => {
-            return {
-                ...participant,
-                totalTeamPoints: participant.totaalpunten,
-                totalMatchPoints: participant.matchPredictions.reduce((a, b) => {
-                    return a + b.punten;
-                }, 0),
-            };
-        });
-        this.logger.log('totalstand done');
-
-        if (rankingStandMeenemen) {
-            rankingStand = await this.getRankingStand('ca10d47a-b7a3-4266-b5dc-a1e42d7e3403'); // todo
-            this.logger.log('rankingStand done');
-
-        }
-
-        const questionstand = await this.getQuestionStand('2d6b5514-5375-4800-ae87-9072d1644dfa');
-        this.logger.log('getQuestionStand done');
-
-        const stand: any[] = totalstand.map(participant => {
-            return {
-                id: participant.id,
-                displayName: participant.displayName,
-                teamName: participant.teamName,
-                totalMatchPoints: participant.totalMatchPoints,
-                totalTeamPoints: participant.totalTeamPoints,
-                totalRankingPoints: rankingStandMeenemen && rankingStand.find(participantR => {
-                    return participantR.id === participant.id;
-                }) ? rankingStand.find(participantR => {
-                    return participantR.id === participant.id;
-                }).totalPoints : null,
-                totalQuestionPoints: questionstand.find(participantR => {
-                    return participantR.id === participant.id;
-                }) ? questionstand.find(participantR => {
-                    return participantR.id === participant.id;
-                }).totalPoints : null,
-            };
-        }).map(participant => {
-            return {
-                ...participant,
-                totalPoints: participant.totalMatchPoints
-                    + participant.totalTeamPoints
-                    + participant.totalRankingPoints
-                    + participant.totalQuestionPoints,
-            };
-        })
-            .sort((a, b) => {
-                return b.totalPoints - a.totalPoints;
-            });
-
-        this.logger.log('start getSortedPositionStand');
-        return this.getSortedPositionStand(stand);
+        return this.getSortedPositionStand(totalstand);
     }
 
     async getMatchStand(predictionId: string): Promise<any[]> {
