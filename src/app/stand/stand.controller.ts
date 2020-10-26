@@ -35,7 +35,7 @@ export class StandController {
     @ApiImplicitParam({name: 'competitionId'})
     @Get('totaal/competition/:competitionId')
     async getTotalStand(@Param('competitionId') competitionId): Promise<any> {
-        return this.service.getTotalStand(competitionId);
+        return this.service.getTotalStandFB(competitionId);
     }
 
     @ApiImplicitParam({name: 'predictionId'})

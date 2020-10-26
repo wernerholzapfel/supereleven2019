@@ -35,16 +35,72 @@ export class StandService {
 
     async createTotalStand(competitionId: string): Promise<any[]> {
         const sortedPositionStand = await this.getTotalStand(competitionId);
-        // const db = admin.database();
-        //
-        // const docRef = db.ref(`${competitionId}/totaalstand/totaal`);
-        // docRef.set(sortedPositionStand);
-        //
-        // const lastUpdatedref = db.ref(`${competitionId}/lastUpdated`);
-        // lastUpdatedref.set({lastUpdated: Date.now()});
+        const db = admin.database();
+
+        const docRef = db.ref(`${competitionId}/totaalstand/totaal`);
+        docRef.set(sortedPositionStand);
+
+        const lastUpdatedref = db.ref(`${competitionId}/lastUpdated`);
+        lastUpdatedref.set({lastUpdated: Date.now()});
 
         return sortedPositionStand;
     }
+
+    async getTotalStandFB(competitionId: string): Promise<any> {
+        this.logger.log('getTotalStandFB start');
+        let totalstand = [];
+        let questionStand = [];
+        let matchesStand = [];
+        let teamStand = [];
+
+        const rankingStandMeenemen = false;
+        const db = admin.database();
+
+        const teamRef = db.ref('dd0c5fa2-9202-40e9-9505-ff8a3dbb6429/a855cf19-195f-484e-88cc-c9dbc744ae98/Team/totaal'); // todo
+        await teamRef.once('value', async teamTotaal => {
+            this.logger.log('teamTotaal: ' + teamTotaal.val().length);
+            this.logger.log('fb console');
+            teamStand = teamTotaal.val();
+        });
+        const matchesRef = db.ref('dd0c5fa2-9202-40e9-9505-ff8a3dbb6429/7903e5e5-151b-4508-ac3b-df61f69fc616/Matches/totaal'); // todo
+        await matchesRef.once('value', async (matches) => {
+            this.logger.log('matches: ' + matches.val().length);
+            matchesStand = matches.val();
+        });
+
+        const questionRef = db.ref('dd0c5fa2-9202-40e9-9505-ff8a3dbb6429/2d6b5514-5375-4800-ae87-9072d1644dfa/Questions/totaal'); // todo
+        await questionRef.once('value', async question => {
+            this.logger.log('question: ' + question.val().length);
+
+            questionStand = question.val();
+        });
+
+        totalstand = teamStand.map(participant => {
+            return {
+                displayName: participant.displayName,
+                id: participant.id,
+                teamName: participant.teamName,
+                totalTeamPoints: participant.totaalpunten,
+                totalRankingPoints: 0,
+                totalMatchPoints: matchesStand.length > 0 ? matchesStand.find(m => m.id === participant.id).totalPoints : 0,
+                totalQuestionPoints: questionStand.length > 0 ? questionStand.find(q => q.id === participant.id).totalPoints : 0,
+            };
+        })
+            .map(participant => {
+                return {
+                    ...participant,
+                    totalPoints: participant.totalMatchPoints
+                        + participant.totalTeamPoints
+                        + participant.totalRankingPoints
+                        + participant.totalQuestionPoints,
+                };
+            })
+            .sort((a, b) => {
+                return b.totalPoints - a.totalPoints;
+            });
+        return totalstand;
+    }
+
 
     async getTotalStand(competitionId: string): Promise<any[]> {
         this.logger.log('getTotalStand start');
