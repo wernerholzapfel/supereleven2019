@@ -8,7 +8,7 @@ export class RoundService {
 
     constructor(private readonly connection: Connection,
                 @InjectRepository(Round)
-                private readonly repository: Repository<Round>,) {
+                private readonly repository: Repository<Round>) {
     }
 
     async getNextRound(): Promise<Round> {
