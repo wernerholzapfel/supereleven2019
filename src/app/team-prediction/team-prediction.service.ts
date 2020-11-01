@@ -39,12 +39,12 @@ export class TeamPredictionService {
             .createQueryBuilder('participant')
             .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId', {predictionId})
             .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+            .leftJoinAndSelect('teamPredictions.round', 'round')
             .leftJoinAndSelect('teamPlayer.player', 'player')
             .leftJoinAndSelect('teamPlayer.team', 'team')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
             .andWhere('teamPredictions.isActive')
             .getOne();
-
 
         return participant ? participant.teamPredictions : [];
     }
@@ -347,7 +347,12 @@ export class TeamPredictionService {
         }
     }
 
-    async getNumberOfPossibleTransfers(predictionId: string, firebaseIdentifier: string): Promise<{ numberOfPossibleTransfers: number }> {
+    async getNumberOfPossibleTransfers(predictionId: string, firebaseIdentifier: string):
+        Promise<{
+            numberOfPossibleTransfers: number,
+            idsCurrentActivePlayers: string[],
+            idCurrentCaptain: string,
+        }> {
 
         const allPreviousPlayers = await this.connection
             .getRepository(Teamprediction)
@@ -359,15 +364,46 @@ export class TeamPredictionService {
             .leftJoinAndSelect('teamPlayer.team', 'team')
             .leftJoinAndSelect('teamPredictions.round', 'round')
             .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
+            .leftJoinAndSelect('teamPredictions.captainTillRound', 'captainTillRound')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
             .andWhere('prediction.id = :predictionId', {predictionId})
             .getMany();
 
-        const previousNumberOfPlayers = allPreviousPlayers.filter(player => {
-            return !player.tillRound || player.round.id !== player.tillRound.id;
-        }).length;
+        const nextRound = await this.roundService.getNextRound();
 
-        return {numberOfPossibleTransfers: 17 - previousNumberOfPlayers};
+        const previousPlayers = allPreviousPlayers.filter(player => {
+            return !player.tillRound ||
+                (player.round.id !== player.tillRound.id &&
+                    player.tillRound.id !== nextRound.id);
+        });
+
+        const idsCurrentActivePlayers = allPreviousPlayers.filter(player => {
+            return (player.isActive &&
+                player.round.id !== nextRound.id) ||
+                (player.tillRound && player.tillRound.id === nextRound.id);
+        });
+
+        this.logger.log(allPreviousPlayers);
+
+        const allCaptains = allPreviousPlayers.filter(player => {
+            return player.captain || !!player.captainTillRound;
+        });
+
+        this.logger.log(allCaptains);
+
+        const previousCaptainId = allCaptains.length > 0 ?
+            allCaptains.find(captain => captain.captainTillRound && captain.captainTillRound.id === nextRound.id) ?
+                allCaptains.find(captain => captain.captainTillRound.id).teamPlayer.player.id :
+                allCaptains.find(captain => captain.isActive).teamPlayer.player.id :
+            '';
+
+        return {
+            numberOfPossibleTransfers: 17 - previousPlayers.length,
+            idsCurrentActivePlayers: idsCurrentActivePlayers.map(player => {
+                return player.teamPlayer.player.id;
+            }),
+            idCurrentCaptain: previousCaptainId,
+        };
 
     }
 
