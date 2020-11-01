@@ -10,6 +10,13 @@ export class PlayerController {
     private readonly logger = new Logger('PlayerController', true);
 
     constructor(private readonly service: PlayerService) {
+        // this.update().then(result => {
+        //     this.logger.log('update done');
+        // });
+
+        // this.updateplayersforprediction().then(result => {
+        //     this.logger.log('update done');
+        // });
     }
 
     @Get()
@@ -25,6 +32,6 @@ export class PlayerController {
     @Post('updateplayersforprediction')
     async updateplayersforprediction() {
         this.logger.log('ol werner');
-        return this.service.updateplayersforprediction('dummy');
+        return this.service.updateplayersforprediction('a855cf19-195f-484e-88cc-c9dbc744ae98');
     }
 }

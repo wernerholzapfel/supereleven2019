@@ -19,9 +19,15 @@ export class RankingTeamController {
         return this.service.getAllByCompetitionId(competitionid);
     }
 
+    @ApiImplicitParam({name: 'competitionid'})
+    @Get('results/competitionid/:competitionid')
+    async getRankingResultsByCompetitionId(@Param('competitionid') competitionid): Promise<RankingTeam[]> {
+        return this.service.getRankingResultsByCompetitionId(competitionid);
+    }
+
     @Post()
-    async create(@Req() req, @Body() createDto: CreateRankingTeamDto) {
-        const newObject = Object.assign({}, createDto);
+    async create(@Req() req, @Body() createDto: CreateRankingTeamDto[]) {
+        const newObject = Object.assign([], createDto);
         return await this.service.create(newObject);
     }
 }

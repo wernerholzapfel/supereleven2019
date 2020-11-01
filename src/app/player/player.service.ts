@@ -30,7 +30,6 @@ export class PlayerService {
             .createQueryBuilder('teams')
             .getMany();
 
-
         const dbPlayers = await this.connection
             .getRepository(Player)
             .createQueryBuilder('player')
@@ -43,19 +42,19 @@ export class PlayerService {
             .getMany();
 
         const mappedPlayerList: any[] = await dbPlayers
-        // if position is unknown or player already exists don't insert the player
+            // if position is unknown or player already exists don't insert the player
             .filter(dbplayer => {
                 return !teamplayers.find(tp => {
-                        return tp.player.id === dbplayer.id
-                    })
+                    return tp.player.id === dbplayer.id
+                })
             })
             .map(player => {
                 return {
                     position: player.position,
                     active: true,
                     player: {id: player.id},
-                    competition: {id: '535de68e-0e11-4b07-9977-1a8499643c09'},
-                    prediction: {id: 'ca6e325f-f711-4c9d-ad5d-c9ade8cd522f'},
+                    competition: {id: 'dd0c5fa2-9202-40e9-9505-ff8a3dbb6429'},
+                    prediction: {id: 'a855cf19-195f-484e-88cc-c9dbc744ae98'},
                     team: {id: dbTeams.find(team => team.referenceId === player.teamReference).id}
                 }
             });
@@ -146,7 +145,9 @@ export class PlayerService {
         //
         // per teamid de gegevens van t team ophalen;
 
-        teamIds.pipe(
+        this.logger.log(teamIds);
+
+        await teamIds.pipe(
             concatAll(),
             concatMap(a => of(a).pipe(delay(6000))),
             mergeMap(teamId => {
@@ -155,42 +156,53 @@ export class PlayerService {
                         map(response => {
                             this.logger.log('ik heb data opgehaald voor ' + teamId);
                             return response.data
-                        }))
+                        }));
             }))
             .subscribe(teams => {
                 //
-                this.connection.getRepository(Player)
-                    .createQueryBuilder()
-                    .insert()
-                    .into(Player)
-                    .values(teams.squad.filter(squadmember => {
-                        return squadmember.role === 'PLAYER'
-                            && !currentPlayers.find(cp => {
-                                return cp.playerReference === squadmember.id
-                                    && cp.teamReference === teams.id
-                            })
-                    })
-                        .map(squad => {
-                            return {
-                                playerReference: squad.id ? squad.id : 0,
-                                teamReference: teams.id,
-                                team: teams.shortName,
-                                name: squad.name,
-                                position: squad.position,
-                                dateOfBirth: squad.dateOfBirth,
-                                nationality: squad.nationality,
-                                countryOfBirth: squad.countryOfBirth
-                            }
-                        }))
-                    .returning('*')
-                    .execute()
-                    .catch((err) => {
-                        throw new HttpException({
-                            message: err.message,
-                            statusCode: HttpStatus.BAD_REQUEST,
-                        }, HttpStatus.BAD_REQUEST);
+                const update = teams.squad.filter(squadmember => {
+                    return squadmember.role === 'PLAYER'
+                        && !currentPlayers.find(cp => {
+                            return cp.playerReference === squadmember.id
+                                && cp.teamReference === teams.id
+                        });
+                })
+                    .map(squad => {
+                        this.logger.log(squad.name);
+                        return {
+                            playerReference: squad.id ? squad.id : 0,
+                            teamReference: teams.id,
+                            team: teams.shortName,
+                            name: squad.name,
+                            position: squad.position,
+                            dateOfBirth: squad.dateOfBirth,
+                            nationality: squad.nationality,
+                            countryOfBirth: squad.countryOfBirth
+                        };
                     });
+
+                this.logger.log(update.length);
+                this.logger.log(update);
+                if (update.length > 0) {
+                    this.logger.log(`add ${update.length} players`);
+                    this.connection.getRepository(Player)
+                        .createQueryBuilder()
+                        .insert()
+                        .into(Player)
+                        .values(update)
+                        .returning('*')
+                        .execute()
+                        .catch((err) => {
+                            throw new HttpException({
+                                message: err.message,
+                                statusCode: HttpStatus.BAD_REQUEST,
+                            }, HttpStatus.BAD_REQUEST);
+                        });
+                }
+                else {
+                    this.logger.log('geen nieuwe spelers gevonden');
+                }
             });
-        this.logger.log('Done updating players')
+
     }
 }

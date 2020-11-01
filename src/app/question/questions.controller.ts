@@ -1,4 +1,4 @@
-import {Body, Controller, Get, Param, Post, Req} from '@nestjs/common';
+import {Body, Controller, Get, Param, Post, Put, Req} from '@nestjs/common';
 import {QuestionsService} from './questions.service';
 import {Question} from './question.entity';
 import {CreateQuestionDto} from './create-question.dto';
@@ -19,6 +19,12 @@ export class QuestionsController {
 
     @Post()
     async create(@Req() req, @Body() createQuestionDto: CreateQuestionDto[]) {
-        return await this.service.create(createQuestionDto)
+        return await this.service.create(createQuestionDto);
+    }
+
+    @ApiImplicitParam({name: 'questionid'})
+    @Put()
+    async update(@Body() createQuestionDto: {questionId: string, answer: string, roundId: string}) {
+        return await this.service.updateQuestion(createQuestionDto)
     }
 }

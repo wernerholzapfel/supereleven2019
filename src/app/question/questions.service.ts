@@ -1,5 +1,5 @@
 import {HttpException, HttpStatus, Injectable} from '@nestjs/common';
-import {Connection, Repository} from 'typeorm';
+import {Connection, Repository, UpdateResult} from 'typeorm';
 import {Question} from './question.entity';
 import {CreateQuestionDto} from './create-question.dto';
 import {InjectRepository} from '@nestjs/typeorm';
@@ -17,6 +17,7 @@ export class QuestionsService {
             .createQueryBuilder('question')
             .leftJoinAndSelect('question.competition', 'competition')
             .leftJoinAndSelect('question.prediction', 'prediction')
+            .leftJoinAndSelect('question.round', 'round')
             .where('prediction.id = :id', {id: predictionid})
             .getMany();
     }
@@ -29,6 +30,15 @@ export class QuestionsService {
                     statusCode: HttpStatus.BAD_REQUEST,
                 }, HttpStatus.BAD_REQUEST);
             });
+    }
+
+    async updateQuestion(body: {questionId: string, answer: string, roundId: string}): Promise<UpdateResult> {
+            return await this.connection.getRepository(Question)
+            .createQueryBuilder('question')
+            .update(Question)
+            .set({answer: body.answer, round: {id: body.roundId}})
+            .where('id = :questionId', {questionId: body.questionId})
+            .execute();
     }
 
 }

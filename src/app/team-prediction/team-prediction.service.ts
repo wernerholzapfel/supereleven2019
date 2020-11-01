@@ -6,7 +6,7 @@ import {CreateTeamPredictionDto} from './create-team-prediction.dto';
 import {Participant} from '../participant/participant.entity';
 import {RoundService} from '../round/round.service';
 import {Observable} from 'rxjs';
-import {Position} from '../team-player/teamplayer.entity';
+import {Position, Teamplayer} from '../team-player/teamplayer.entity';
 import {Round} from '../round/round.entity';
 import admin from 'firebase-admin';
 import {PredictionType} from '../prediction/create-prediction.dto';
@@ -39,12 +39,12 @@ export class TeamPredictionService {
             .createQueryBuilder('participant')
             .leftJoinAndSelect('participant.teamPredictions', 'teamPredictions', 'teamPredictions.prediction.id = :predictionId', {predictionId})
             .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+            .leftJoinAndSelect('teamPredictions.round', 'round')
             .leftJoinAndSelect('teamPlayer.player', 'player')
             .leftJoinAndSelect('teamPlayer.team', 'team')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
             .andWhere('teamPredictions.isActive')
             .getOne();
-
 
         return participant ? participant.teamPredictions : [];
     }
@@ -69,7 +69,7 @@ export class TeamPredictionService {
             .leftJoinAndSelect('teamPredictions.captainTillRound', 'captainTillRound')
             .leftJoinAndSelect('teamPlayer.player', 'player')
             .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores', 'teamplayerscores.round.id = :roundId', {
-                roundId
+                roundId,
             })
             .leftJoinAndSelect('teamplayerscores.round', 'score_round')
             .leftJoinAndSelect('teamPlayer.team', 'team')
@@ -85,9 +85,9 @@ export class TeamPredictionService {
                 const subQuery2 = sq.subQuery()
                     .select('round.id')
                     .from(Round, 'round')
-                    .where('round.startDate = :enddate', {enddate: enddate})
+                    .where('round.startDate = :enddate', {enddate})
                     .getQuery();
-                return '(tillRound.id IN ' + subQuery2 + ' OR tillRound.id is null)'
+                return '(tillRound.id IN ' + subQuery2 + ' OR tillRound.id is null)';
             })
             .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
@@ -98,19 +98,19 @@ export class TeamPredictionService {
                 teamPredictions: participant.teamPredictions.map(prediction => {
                     return {
                         ...prediction,
-                        isActive: true
-                    }
-                })
-            }
+                        isActive: true,
+                    };
+                }),
+            };
         }));
     }
 
     async createRoundStand(competitionId: string, predictionId: string, roundId: string) {
         const sortedStand = await this.getRoundStand(predictionId, roundId);
 
-        let db = admin.database();
+        const db = admin.database();
 
-        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Team}/${roundId}`);
+        const docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Team}/${roundId}`);
 
         docRef.set(sortedStand);
 
@@ -139,20 +139,21 @@ export class TeamPredictionService {
     async createStand(competitionId: string, predictionId: string): Promise<any[]> {
         const sortedStand = await this.getStand(predictionId);
 
-        let db = admin.database();
+        const db = admin.database();
 
-        let docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Team}/totaal`);
+        const docRef = db.ref(`${competitionId}/${predictionId}/${PredictionType.Team}/totaal`);
 
         docRef.set(sortedStand);
 
-        return sortedStand
+        return sortedStand;
     }
 
     isCaptain(prediction, round: Round): boolean {
-        return (prediction.captain && !prediction.captainTillRound) || (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate)
+        return (prediction.captain && !prediction.captainTillRound) || (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate);
     }
 
     public calculateStand(participants: any[]) {
+        this.logger.log('calculatestand');
         let previousPosition = 1;
 
         const stand = participants
@@ -181,42 +182,43 @@ export class TeamPredictionService {
                                             cleansheet: this.determineCleansheet(prediction.teamPlayer.position, score.cleansheet) * captainFactor,
                                             goals: this.determineGoals(prediction.teamPlayer.position, score.goals) * captainFactor,
                                             assists: this.determineAssists(prediction.teamPlayer.position, score.assists) * captainFactor,
-                                            penaltystopped: this.determinePenaltyStopped(prediction.teamPlayer.position, score.penaltystopped) * captainFactor,
+                                            penaltystopped: this.determinePenaltyStopped(prediction.teamPlayer.position,
+                                                score.penaltystopped) * captainFactor,
                                         }
-                                        : 0
+                                        : 0;
                                 }).map(punten => {
                                     return {
                                         ...punten,
-                                        totaal: Object.entries(punten).reduce(function (total, pair: [string, number]) {
+                                        totaal: Object.entries(punten).reduce((total, pair: [string, number]) => {
                                             const [key, value] = pair;
-                                            return typeof value == 'number' ? total + value : total;
-                                        }, 0)
-                                    }
+                                            return typeof value === 'number' ? total + value : total;
+                                        }, 0),
+                                    };
                                 }),
-                            }
-                        }
+                            },
+                        };
                     }).map(prediction => {
                         return {
                             ...prediction,
                             teamPlayer: {
                                 ...prediction.teamPlayer,
                                 teamplayertotaalpunten: this.calculateTeamplayerTotaalPunten(prediction.teamPlayer.teamplayerpunten),
-                            }
-                        }
+                            },
+                        };
                     }).sort((a, b) => {
                         const x = this.setSortValuePosition(a.teamPlayer.position);
                         const y = this.setSortValuePosition(b.teamPlayer.position);
                         return a.isActive < b.isActive ? 1 : a.isActive > b.isActive ? -1 : x < y ? -1 : x > y ? 1 : 0;
-                    })
-                }
+                    }),
+                };
             })
             .map(participant => {
                 return {
                     ...participant,
                     totaalpunten: participant.teamPredictions.reduce((totalPoints, player) => {
                         return totalPoints + player.teamPlayer.teamplayertotaalpunten.totaal;
-                    }, 0)
-                }
+                    }, 0),
+                };
             })
             .sort((a, b) => {
                 return a.totaalpunten > b.totaalpunten ? -1 : a.totaalpunten < b.totaalpunten ? 1 : 0;
@@ -226,55 +228,55 @@ export class TeamPredictionService {
             if (index > 0 && participant.totaalpunten === stand[index - 1].totaalpunten) {
                 return {
                     ...participant,
-                    position: previousPosition
-                }
+                    position: previousPosition,
+                };
             } else {
                 previousPosition = index + 1;
                 return {
                     ...participant,
-                    position: index + 1
-                }
+                    position: index + 1,
+                };
             }
         });
     }
 
     calculateTeamplayerTotaalPunten(teamplayerpunten) {
         return {
-            'played': this.addReduceFunction(teamplayerpunten, 'played'),
-            'win': this.addReduceFunction(teamplayerpunten, 'win'),
-            'draw': this.addReduceFunction(teamplayerpunten, 'draw'),
-            'cleansheet': this.addReduceFunction(teamplayerpunten, 'cleansheet'),
-            'yellow': this.addReduceFunction(teamplayerpunten, 'yellow'),
-            'secondyellow': this.addReduceFunction(teamplayerpunten, 'secondyellow'),
-            'red': this.addReduceFunction(teamplayerpunten, 'red'),
-            'goals': this.addReduceFunction(teamplayerpunten, 'goals'),
-            'assists': this.addReduceFunction(teamplayerpunten, 'assists'),
-            'penaltymissed': this.addReduceFunction(teamplayerpunten, 'penaltymissed'),
-            'penaltystopped': this.addReduceFunction(teamplayerpunten, 'penaltystopped'),
-            'owngoal': this.addReduceFunction(teamplayerpunten, 'owngoal'),
-            'totaal': this.addReduceFunction(teamplayerpunten, 'totaal'),
-        }
+            played: this.addReduceFunction(teamplayerpunten, 'played'),
+            win: this.addReduceFunction(teamplayerpunten, 'win'),
+            draw: this.addReduceFunction(teamplayerpunten, 'draw'),
+            cleansheet: this.addReduceFunction(teamplayerpunten, 'cleansheet'),
+            yellow: this.addReduceFunction(teamplayerpunten, 'yellow'),
+            secondyellow: this.addReduceFunction(teamplayerpunten, 'secondyellow'),
+            red: this.addReduceFunction(teamplayerpunten, 'red'),
+            goals: this.addReduceFunction(teamplayerpunten, 'goals'),
+            assists: this.addReduceFunction(teamplayerpunten, 'assists'),
+            penaltymissed: this.addReduceFunction(teamplayerpunten, 'penaltymissed'),
+            penaltystopped: this.addReduceFunction(teamplayerpunten, 'penaltystopped'),
+            owngoal: this.addReduceFunction(teamplayerpunten, 'owngoal'),
+            totaal: this.addReduceFunction(teamplayerpunten, 'totaal'),
+        };
     }
 
     addReduceFunction(array: any[], property: string) {
         return array.reduce((totalPoints, item) => {
             return item[property] ? totalPoints + item[property] : totalPoints;
-        }, 0)
-    };
+        }, 0);
+    }
 
     private setSortValuePosition(position: string) {
         switch (position) {
             case Position.Keeper: {
-                return 0
+                return 0;
             }
             case Position.Defender: {
-                return 1
+                return 1;
             }
             case Position.Midfielder: {
-                return 2
+                return 2;
             }
             case Position.Forward: {
-                return 3
+                return 3;
             }
 
         }
@@ -283,14 +285,14 @@ export class TeamPredictionService {
     determineCleansheet(position: string, cleansheet): number {
         switch (position) {
             case Position.Keeper: {
-                return cleansheet * this.CLEANSHEET * 2
+                return cleansheet * this.CLEANSHEET * 2;
             }
             case Position.Defender: {
-                return cleansheet * this.CLEANSHEET
+                return cleansheet * this.CLEANSHEET;
 
             }
             default:
-                return 0
+                return 0;
 
         }
     }
@@ -298,16 +300,16 @@ export class TeamPredictionService {
     determineGoals(position: string, goals) {
         switch (position) {
             case Position.Keeper: {
-                return goals * 10
+                return goals * 10;
             }
             case Position.Defender: {
-                return goals * 6
+                return goals * 6;
             }
             case Position.Midfielder: {
-                return goals * 4
+                return goals * 4;
             }
             case Position.Forward: {
-                return goals * 3
+                return goals * 3;
             }
             default:
                 return 0;
@@ -318,16 +320,16 @@ export class TeamPredictionService {
     determineAssists(position: string, assists) {
         switch (position) {
             case Position.Keeper: {
-                return assists * 8
+                return assists * 8;
             }
             case Position.Defender: {
-                return assists * 4
+                return assists * 4;
             }
             case Position.Midfielder: {
-                return assists * 3
+                return assists * 3;
             }
             case Position.Forward: {
-                return assists * 2
+                return assists * 2;
             }
             default:
                 return 0;
@@ -337,12 +339,72 @@ export class TeamPredictionService {
     determinePenaltyStopped(position: string, penaltyStopped) {
         switch (position) {
             case Position.Keeper: {
-                return penaltyStopped * this.PENALTYSTOPPED
+                return penaltyStopped * this.PENALTYSTOPPED;
             }
             default:
                 return 0;
 
         }
+    }
+
+    async getNumberOfPossibleTransfers(predictionId: string, firebaseIdentifier: string):
+        Promise<{
+            numberOfPossibleTransfers: number,
+            idsCurrentActivePlayers: string[],
+            idCurrentCaptain: string,
+        }> {
+
+        const allPreviousPlayers = await this.connection
+            .getRepository(Teamprediction)
+            .createQueryBuilder('teamPredictions')
+            .leftJoin('teamPredictions.participant', 'participant')
+            .leftJoin('teamPredictions.prediction', 'prediction')
+            .leftJoinAndSelect('teamPredictions.teamPlayer', 'teamPlayer')
+            .leftJoinAndSelect('teamPlayer.player', 'player')
+            .leftJoinAndSelect('teamPlayer.team', 'team')
+            .leftJoinAndSelect('teamPredictions.round', 'round')
+            .leftJoinAndSelect('teamPredictions.tillRound', 'tillRound')
+            .leftJoinAndSelect('teamPredictions.captainTillRound', 'captainTillRound')
+            .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+            .andWhere('prediction.id = :predictionId', {predictionId})
+            .getMany();
+
+        const nextRound = await this.roundService.getNextRound();
+
+        const previousPlayers = allPreviousPlayers.filter(player => {
+            return !player.tillRound ||
+                (player.round.id !== player.tillRound.id &&
+                    player.tillRound.id !== nextRound.id);
+        });
+
+        const idsCurrentActivePlayers = allPreviousPlayers.filter(player => {
+            return (player.isActive &&
+                player.round.id !== nextRound.id) ||
+                (player.tillRound && player.tillRound.id === nextRound.id);
+        });
+
+        this.logger.log(allPreviousPlayers);
+
+        const allCaptains = allPreviousPlayers.filter(player => {
+            return player.captain || !!player.captainTillRound;
+        });
+
+        this.logger.log(allCaptains);
+
+        const previousCaptainId = allCaptains.length > 0 ?
+            allCaptains.find(captain => captain.captainTillRound && captain.captainTillRound.id === nextRound.id) ?
+                allCaptains.find(captain => captain.captainTillRound.id).teamPlayer.player.id :
+                allCaptains.find(captain => captain.isActive).teamPlayer.player.id :
+            '';
+
+        return {
+            numberOfPossibleTransfers: 17 - previousPlayers.length,
+            idsCurrentActivePlayers: idsCurrentActivePlayers.map(player => {
+                return player.teamPlayer.player.id;
+            }),
+            idCurrentCaptain: previousCaptainId,
+        };
+
     }
 
     async create(newTeam: CreateTeamPredictionDto[], firebaseIdentifier: string): Promise<Teamprediction[] | Observable<void>> {
@@ -351,6 +413,8 @@ export class TeamPredictionService {
             .createQueryBuilder('participant')
             .where('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
             .getOne();
+
+        // throw participant not found?
 
         const nextRound = await this.roundService.getNextRound();
 
@@ -374,20 +438,21 @@ export class TeamPredictionService {
                 if (newTeam.find(tp => tp.teamPlayer.id === CurrentActivePlayer.teamPlayer.id && CurrentActivePlayer.isActive)) {
                     return {
                         ...CurrentActivePlayer,
-                    }
+                    };
                 } else {
                     return {
                         ...CurrentActivePlayer,
-                        isActive: false
-                    }
+                        isActive: false,
+                    };
                 }
             });
 
-
-        const currentCaptain = allPreviousPlayers.find(player => player.captain);
-        const newCaptain = !currentCaptain || currentCaptain.teamPlayer.id !== newTeam.find(player => player.captain).teamPlayer.id
-            ? newTeam.find(player => player.captain)
-            : null;
+        const currentCaptain = allPreviousPlayers.find(player => player.captain && player.isActive);
+        const newCaptain =
+            !currentCaptain ||
+            currentCaptain.teamPlayer.id !== newTeam.find(player => player.captain).teamPlayer.id ?
+                newTeam.find(player => player.captain)
+                : null;
 
         // filter form with previousteam so only new players are left over.
         let newPlayers = newTeam.reduce((unique, item) => {
@@ -395,7 +460,7 @@ export class TeamPredictionService {
                 .filter(previousPlayer => previousPlayer.isActive)
                 .find(ap => ap.teamPlayer.id === item.teamPlayer.id)
                 ? unique
-                : [...unique, item]
+                : [...unique, item];
         }, []);
 
         const existingPlayerThatBecomesCaptain = newCaptain ? allPreviousPlayers.find(player => player.teamPlayer.id === newCaptain.teamPlayer.id) : null;
@@ -406,7 +471,7 @@ export class TeamPredictionService {
             .map(item => item.id)];
 
         const previousNumberOfPlayers = allPreviousPlayers.filter(player => {
-            return !player.tillRound || player.round.id !== player.tillRound.id
+            return !player.tillRound || player.round.id !== player.tillRound.id;
         }).length;
 
         if (newPlayers.length + previousNumberOfPlayers > 17) {
@@ -417,7 +482,7 @@ export class TeamPredictionService {
         }
 
         return await getManager().transaction(async transactionalEntityManager => {
-            if (idsToBeSetInActive.length > 0) //set inactive
+            if (idsToBeSetInActive.length > 0) // set inactive
             {
                 await transactionalEntityManager.getRepository(Teamprediction)
                     .createQueryBuilder()
@@ -427,7 +492,7 @@ export class TeamPredictionService {
                     .execute();
             }
             if (newCaptain) {
-                newPlayers = [...newPlayers, newCaptain];
+                newPlayers = [...newPlayers.filter(np => !np.captain), newCaptain];
                 if (existingPlayerThatBecomesCaptain) {
                     // zet oude speler op inactief indien nieuwe captain toegevoegd gaat worden
                     await transactionalEntityManager.getRepository(Teamprediction)
@@ -450,6 +515,14 @@ export class TeamPredictionService {
                         .andWhere('"participantId" = :participantId', {participantId: participant.id})
                         .execute();
                 }
+
+                await transactionalEntityManager.getRepository(Teamplayer)
+                    .createQueryBuilder('teamplayer')
+                    .update(Teamplayer)
+                    .set({isSelected: true})
+                    .where('"id" IN (:...teamplayerIds)',
+                        {teamplayerIds: newPlayers.map(np => np.teamPlayer.id)})
+                    .execute();
             }
             return await transactionalEntityManager.getRepository(Teamprediction)
                 .save([
@@ -457,8 +530,8 @@ export class TeamPredictionService {
                         return {
                             ...p,
                             round: {id: nextRound.id},
-                            participant
-                        }
+                            participant,
+                        };
                     }),
                 ])
                 .catch((err) => {
@@ -467,6 +540,6 @@ export class TeamPredictionService {
                         statusCode: HttpStatus.BAD_REQUEST,
                     }, HttpStatus.BAD_REQUEST);
                 });
-        })
+        });
     }
 }

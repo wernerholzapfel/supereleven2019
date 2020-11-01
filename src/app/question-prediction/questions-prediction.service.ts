@@ -1,9 +1,16 @@
 import {HttpException, HttpStatus, Injectable} from '@nestjs/common';
-import {Connection, Repository} from 'typeorm';
+import {Connection, getManager, Repository} from 'typeorm';
 import {InjectRepository} from '@nestjs/typeorm';
 import {QuestionPrediction} from './question-prediction.entity';
 import {CreateQuestionPredictionDto} from './create-question-prediction.dto';
 import {Participant} from '../participant/participant.entity';
+import {QuestionCorrect} from '../question/create-question.dto';
+
+export interface UpdateQuestionPredictionParams {
+    roundId: string;
+    id: string;
+    correct: QuestionCorrect;
+}
 
 @Injectable()
 export class QuestionsPredictionService {
@@ -22,6 +29,17 @@ export class QuestionsPredictionService {
             .leftJoinAndSelect('questionsprediction.question', 'question')
             .where('prediction.id = :id', {id: predictionid})
             .andWhere('participant.firebaseIdentifier = :firebaseIdentifier', {firebaseIdentifier})
+            .getMany();
+
+    }
+
+    async findQuestionsByQuestionId(questionid: string): Promise<QuestionPrediction[]> {
+        return await this.connection.getRepository(QuestionPrediction)
+            .createQueryBuilder('questionsprediction')
+            .leftJoinAndSelect('questionsprediction.participant', 'participant')
+            .leftJoinAndSelect('questionsprediction.question', 'question')
+            .where('question.id = :id', {id: questionid})
+            .orderBy('questionsprediction.answer')
             .getMany();
 
     }
@@ -45,4 +63,40 @@ export class QuestionsPredictionService {
                 }, HttpStatus.BAD_REQUEST);
             });
     }
+
+
+    async updateQuestionPrediction(items: UpdateQuestionPredictionParams[]): Promise<QuestionPrediction[]> {
+        await getManager().transaction(async transactionalEntityManager => {
+            return items.forEach(async item => {
+
+                let punten = this.determineQuestionPunten(item.correct);
+
+                return await transactionalEntityManager.getRepository(QuestionPrediction)
+                    .createQueryBuilder('questionPrediction')
+                    .update(QuestionPrediction)
+                    .set({punten, round: {id: item.roundId}})
+                    .where('id = :id', {id: item.id})
+                    .execute();
+
+            })
+        });
+        return [];
+    }
+
+    determineQuestionPunten(correct: QuestionCorrect): number {
+        switch (correct) {
+            case QuestionCorrect.Full: {
+                return 20
+            }
+            case QuestionCorrect.Half: {
+                return 10
+            }
+            case QuestionCorrect.None: {
+                return 0
+            }
+            default:
+                return 0
+        }
+    }
+
 }

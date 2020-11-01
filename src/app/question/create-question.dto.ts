@@ -13,3 +13,9 @@ export class CreateQuestionDto {
     @IsDefined() @IsNumber() @ApiModelProperty() readonly prediction: Prediction;
 
 }
+
+export enum QuestionCorrect {
+    Full = 'Full',
+    Half = 'Half',
+    None = 'None',
+}

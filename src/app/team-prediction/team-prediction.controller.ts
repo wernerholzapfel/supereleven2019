@@ -14,10 +14,14 @@ export class TeamPredictionController {
 
     @ApiImplicitParam({name: 'predictionid'})
     @Get('prediction/:predictionid')
-    async findAll(@Param('predictionid') predictionId, @Req() req,): Promise<Teamprediction[]> {
+    async findAll(@Param('predictionid') predictionId, @Req() req): Promise<Teamprediction[]> {
         return this.service.getAll(predictionId, req.user.uid);
     }
 
+    @Get('prediction/:predictionid/isTransferPossible')
+    async getNumberOfPossibleTransfers(@Param('predictionid') predictionId, @Req() req): Promise<any> {
+        return this.service.getNumberOfPossibleTransfers(predictionId, req.user.uid);
+    }
     @Post()
     async create(@Req() req, @Body() createDto: CreateTeamPredictionDto[]) {
         return await this.service.create(createDto, req.user.uid);

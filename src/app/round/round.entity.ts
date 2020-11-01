@@ -13,6 +13,8 @@ import {Prediction} from '../prediction/prediction.entity';
 import {MatchPrediction} from '../match-prediction/match-prediction.entity';
 import {Competition} from '../competitions/competition.entity';
 import {Match} from '../match/match.entity';
+import {QuestionPrediction} from '../question-prediction/question-prediction.entity';
+import {Question} from '../question/question.entity';
 
 @Entity()
 export class Round {
@@ -34,11 +36,17 @@ export class Round {
     @OneToMany(type => Round, round => round.matchPredictions)
     matchPredictions: MatchPrediction[];
 
+    @OneToMany(type => Round, round => round.questionPredictions)
+    questionPredictions: QuestionPrediction[];
+
     @OneToMany(type => Round, round => round.matches)
     matches: Match[];
 
     @OneToMany(type => Round, round => round.teamplayerscores)
     teamplayerscores: Teamplayerscores[];
+
+    @OneToMany(type => Round, round => round.questions)
+    questions: Question[];
 
     @ManyToOne(type => Prediction, prediction => prediction.rounds)
     prediction: Prediction;
