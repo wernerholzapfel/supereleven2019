@@ -386,7 +386,8 @@ export class TeamPredictionService {
         this.logger.log(allPreviousPlayers);
 
         const allCaptains = allPreviousPlayers.filter(player => {
-            return player.captain || !!player.captainTillRound;
+            return player.captain ||
+                (!player.captain && !!player.captainTillRound && player.round.id !== player.captainTillRound.id);
         });
 
         this.logger.log(allCaptains);
