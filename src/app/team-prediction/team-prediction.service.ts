@@ -118,6 +118,19 @@ export class TeamPredictionService {
     }
 
     async getStand(predictionId: string): Promise<any[]> {
+
+        const rounds: Round[] = await this.connection.getRepository(Round).createQueryBuilder('round')
+            .leftJoin('round.prediction', 'prediction')
+            .where('prediction.id = :predictionId', {predictionId})
+            .orderBy('round.startDate')
+            .getMany();
+
+        const previousRound = await this.roundService.getPreviousRound();
+        const nextRound = await this.roundService.getNextRound();
+
+        this.logger.log('round is: ' + previousRound.name);
+        const startDatePreviousRound: Date = previousRound && previousRound.startDate ? previousRound.startDate : new Date();
+
         const participants: any[] = await this.connection
             .getRepository(Participant)
             .createQueryBuilder('participant')
@@ -130,10 +143,33 @@ export class TeamPredictionService {
             .leftJoinAndSelect('teamPlayer.teamplayerscores', 'teamplayerscores')
             .leftJoinAndSelect('teamplayerscores.round', 'score_round')
             .leftJoinAndSelect('teamPlayer.team', 'team')
+            .where(qb => {
+                const subQuery = qb.subQuery()
+                    .select('round.id')
+                    .from(Round, 'round')
+                    .where('round.startDate <= :startdate', {startdate: startDatePreviousRound})
+                    .getQuery();
+                this.logger.log('roundids 1');
+                this.logger.log(subQuery);
+                return 'prediction_round.id IN ' + subQuery;
+            })
             .orderBy('teamPredictions.isActive', 'DESC')
             .getMany();
 
-        return this.calculateStand(participants);
+        return this.calculateStand(participants.map(participant => {
+            return {
+                ...participant,
+                teamPredictions: participant.teamPredictions.filter(prediction => {
+                    return !prediction.tillRound ||
+                        (prediction.tillRound && prediction.round.id !== prediction.tillRound.id);
+                }).map(tp => {
+                    return {
+                        ...tp,
+                        isActive : tp.isActive ? tp.isActive : tp.tillRound.id === nextRound.id,
+                    };
+                }),
+            };
+        }));
     }
 
     async createStand(competitionId: string, predictionId: string): Promise<any[]> {
