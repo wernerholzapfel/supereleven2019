@@ -1,17 +1,19 @@
-import {Injectable} from '@nestjs/common';
+import {Injectable, Logger} from '@nestjs/common';
 import {Connection, Repository} from 'typeorm';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Teamplayer, TeamplayerResponse} from './teamplayer.entity';
 import {TeamPredictionService} from '../team-prediction/team-prediction.service';
 import admin from 'firebase-admin';
-import {Team} from "../team/team.entity";
-import {Question} from "../question/question.entity";
+import {Teamprediction} from '../team-prediction/team-prediction.entity';
 
 @Injectable()
 export class TeamPlayerService {
+    private readonly logger = new Logger('TeamPlayerService', true);
+
     constructor(private readonly connection: Connection,
                 @InjectRepository(Teamplayer)
-                private readonly repository: Repository<Teamplayer>, private teampredictionService: TeamPredictionService) {
+                private readonly repository: Repository<Teamplayer>,
+                private teampredictionService: TeamPredictionService) {
     }
 
     async getAllByPredictionId(predictionId: string): Promise<Teamplayer[]> {
@@ -22,7 +24,15 @@ export class TeamPlayerService {
             .leftJoinAndSelect('teamplayers.team', 'team')
             .leftJoin('teamplayers.prediction', 'prediction')
             .where('prediction.id = :id', {id: predictionId})
-            .andWhere('teamplayers.active')
+            .andWhere(sq => {
+                const subQuery2 = sq.subQuery()
+                    .select('tp.teamPlayerId')
+                    .distinct(true)
+                    .from(Teamprediction, 'tp')
+                    .groupBy('tp.teamPlayerId')
+                    .getQuery();
+                return '(teamplayers.id IN ' + subQuery2 + ')';
+            })
             .orderBy('team.name')
             .addOrderBy('player.position')
             .addOrderBy('player.name')
@@ -71,36 +81,36 @@ export class TeamPlayerService {
                             goals: this.teampredictionService.determineGoals(teamPlayer.position, score.goals),
                             assists: this.teampredictionService.determineAssists(teamPlayer.position, score.assists),
                             penaltystopped: this.teampredictionService.determinePenaltyStopped(teamPlayer.position, score.penaltystopped),
-                        }
+                        };
                     }).map(punten => {
                         return {
                             ...punten,
-                            totaal: Object.entries(punten).reduce(function (total, pair: [string, number]) {
+                            totaal: Object.entries(punten).reduce((total, pair: [string, number]) => {
                                 const [key, value] = pair;
                                 return typeof value == 'number' ? total + value : total;
-                            }, 0)
-                        }
+                            }, 0),
+                        };
                     }),
-                }
+                };
             }).map(teamPlayer => {
                 return {
                     ...teamPlayer,
                     teamplayertotaalpunten: this.teampredictionService.calculateTeamplayerTotaalPunten(teamPlayer.teamplayerpunten),
-                }
+                };
             })
             .sort((a, b) => {
                 const x = b.teamplayertotaalpunten.totaal;
                 const y = a.teamplayertotaalpunten.totaal;
-                return x < y ? -1 : x > y ? 1 : 0
+                return x < y ? -1 : x > y ? 1 : 0;
             });
 
     }
 
     async createStats(competitionId: string, predictionId: string) {
         const stats = await this.getStats(predictionId);
-        let db = admin.database();
+        const db = admin.database();
 
-        let docRef = db.ref(`${competitionId}/statistieken/${predictionId}/totaal`);
+        const docRef = db.ref(`${competitionId}/statistieken/${predictionId}/totaal`);
         docRef.set(stats);
         return stats;
     }
@@ -139,36 +149,36 @@ export class TeamPlayerService {
                             goals: this.teampredictionService.determineGoals(teamPlayer.position, score.goals),
                             assists: this.teampredictionService.determineAssists(teamPlayer.position, score.assists),
                             penaltystopped: this.teampredictionService.determinePenaltyStopped(teamPlayer.position, score.penaltystopped),
-                        }
+                        };
                     }).map(punten => {
                         return {
                             ...punten,
-                            totaal: Object.entries(punten).reduce(function (total, pair: [string, number]) {
+                            totaal: Object.entries(punten).reduce((total, pair: [string, number]) => {
                                 const [key, value] = pair;
                                 return typeof value == 'number' ? total + value : total;
-                            }, 0)
-                        }
+                            }, 0),
+                        };
                     }),
-                }
+                };
             }).map(teamPlayer => {
                 return {
                     ...teamPlayer,
                     teamplayertotaalpunten: this.teampredictionService.calculateTeamplayerTotaalPunten(teamPlayer.teamplayerpunten),
-                }
+                };
             })
             .sort((a, b) => {
                 const x = b.teamplayertotaalpunten.totaal;
                 const y = a.teamplayertotaalpunten.totaal;
-                return x < y ? -1 : x > y ? 1 : 0
+                return x < y ? -1 : x > y ? 1 : 0;
             });
     }
 
     async createStatsForRound(competitionId: string, predictionId: string, roundId: string): Promise<any[]> {
         const stats = await this.getStatsForRound(predictionId, roundId);
 
-        let db = admin.database();
+        const db = admin.database();
 
-        let docRef = db.ref(`${competitionId}/statistieken/${predictionId}/${roundId}`);
+        const docRef = db.ref(`${competitionId}/statistieken/${predictionId}/${roundId}`);
         docRef.set(stats);
         return stats;
     }
@@ -183,7 +193,15 @@ export class TeamPlayerService {
             .leftJoinAndSelect('teamplayers.teamplayerscores', 'teamplayerscores', 'teamplayerscores.round = :roundId', {roundId})
             .leftJoinAndSelect('teamplayerscores.round', 'round')
             .where('prediction.id = :id', {id: predictionId})
-            .andWhere('teamplayers.isSelected')
+            .andWhere(sq => {
+                const subQuery2 = sq.subQuery()
+                    .select('tp."teamPlayerId"')
+                    .distinct(true)
+                    .from(Teamprediction, 'tp')
+                    .groupBy('tp."teamPlayerId"')
+                    .getQuery();
+                return '(teamplayers.id IN ' + subQuery2 + ')';
+            })
             .orderBy('team.name')
             .addOrderBy('player.position')
             .addOrderBy('player.name')
@@ -204,10 +222,10 @@ export class TeamPlayerService {
                     assists: 0,
                     penaltymissed: 0,
                     penaltystopped: 0,
-                    owngoal: 0
-                }
-            }
-        })
+                    owngoal: 0,
+                },
+            };
+        });
     }
 
 }
