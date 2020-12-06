@@ -26,10 +26,10 @@ export class TeamPlayerService {
             .where('prediction.id = :id', {id: predictionId})
             .andWhere(sq => {
                 const subQuery2 = sq.subQuery()
-                    .select('tp.teamPlayerId')
+                    .select('tp."teamPlayerId"')
                     .distinct(true)
                     .from(Teamprediction, 'tp')
-                    .groupBy('tp.teamPlayerId')
+                    .groupBy('tp."teamPlayerId"')
                     .getQuery();
                 return '(teamplayers.id IN ' + subQuery2 + ')';
             })
