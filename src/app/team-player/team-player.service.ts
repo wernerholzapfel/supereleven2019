@@ -24,15 +24,7 @@ export class TeamPlayerService {
             .leftJoinAndSelect('teamplayers.team', 'team')
             .leftJoin('teamplayers.prediction', 'prediction')
             .where('prediction.id = :id', {id: predictionId})
-            .andWhere(sq => {
-                const subQuery2 = sq.subQuery()
-                    .select('tp."teamPlayerId"')
-                    .distinct(true)
-                    .from(Teamprediction, 'tp')
-                    .groupBy('tp."teamPlayerId"')
-                    .getQuery();
-                return '(teamplayers.id IN ' + subQuery2 + ')';
-            })
+            .andWhere('teamplayers.active')
             .orderBy('team.name')
             .addOrderBy('player.position')
             .addOrderBy('player.name')
