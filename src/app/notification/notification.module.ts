@@ -12,7 +12,7 @@ import {OneSignalModule} from 'onesignal-api-client-nest';
         }),
         HttpModule],
     controllers: [NotificationController],
-    providers: [NotificationService]
+    providers: [NotificationService],
 })
 export class NotificationModule {
 }
