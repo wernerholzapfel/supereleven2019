@@ -48,14 +48,23 @@ export class StandService {
 
     async getTotalStand(competitionId: string): Promise<any> {
         this.logger.log('getTotalStandFB start');
+        let rankingStand = [];
         let totalstand = [];
         let questionStand = [];
         let matchesStand = [];
         let teamStand = [];
 
-        const rankingStandMeenemen = false;
+        const rankingStandMeenemen = true;
         const db = admin.database();
 
+        if (rankingStandMeenemen) {
+            const rankingRef = db.ref('dd0c5fa2-9202-40e9-9505-ff8a3dbb6429/ca10d47a-b7a3-4266-b5dc-a1e42d7e3403/Ranking/totaal'); // todo
+            await rankingRef.once('value', async rankingTotaal => {
+                this.logger.log('teamTotaal: ' + rankingTotaal.val().length);
+                this.logger.log('fb console');
+                rankingStand = rankingTotaal.val();
+            });
+        }
         const teamRef = db.ref('dd0c5fa2-9202-40e9-9505-ff8a3dbb6429/a855cf19-195f-484e-88cc-c9dbc744ae98/Team/totaal'); // todo
         await teamRef.once('value', async teamTotaal => {
             this.logger.log('teamTotaal: ' + teamTotaal.val().length);
@@ -81,7 +90,7 @@ export class StandService {
                 id: participant.id,
                 teamName: participant.teamName,
                 totalTeamPoints: participant.totaalpunten,
-                totalRankingPoints: 0,
+                totalRankingPoints: rankingStandMeenemen && rankingStand.length > 0 ? rankingStand.find(m => m.id === participant.id).totalPoints : 0,
                 totalMatchPoints: matchesStand.length > 0 ? matchesStand.find(m => m.id === participant.id).totalPoints : 0,
                 totalQuestionPoints: questionStand.length > 0 ? questionStand.find(q => q.id === participant.id).totalPoints : 0,
             };
@@ -257,9 +266,11 @@ export class StandService {
             const positionDifference = (rankingPrediction.position - rankingPrediction.positionresult);
 
             switch (positionDifference) {
-                case 2 || -2:
+                case 2:
+                case -2:
                     return 3;
-                case 1 || -1:
+                case 1:
+                case -1:
                     return 5;
                 case 0:
                     return 10;

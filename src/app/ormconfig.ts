@@ -38,7 +38,7 @@ export const ormconfig: TypeOrmModuleOptions = {
         Teamplayer,
         Teamprediction,
         Round,
-        Teamplayerscores
+        Teamplayerscores,
     ],
     logging: false,
     synchronize: true, // DEV only, do not use on PROD!

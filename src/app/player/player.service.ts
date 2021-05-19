@@ -181,8 +181,6 @@ export class PlayerService {
                         };
                     });
 
-                this.logger.log(update.length);
-                this.logger.log(update);
                 if (update.length > 0) {
                     this.logger.log(`add ${update.length} players`);
                     this.connection.getRepository(Player)

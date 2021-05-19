@@ -26,12 +26,12 @@ export class PlayerController {
 
     @Post('update')
     async update() {
-        this.logger.log('ol werner');
+        this.logger.log('update');
         return this.service.updatePlayers();
     }
     @Post('updateplayersforprediction')
     async updateplayersforprediction() {
-        this.logger.log('ol werner');
+        this.logger.log('updateplayersforprediction');
         return this.service.updateplayersforprediction('a855cf19-195f-484e-88cc-c9dbc744ae98');
     }
 }

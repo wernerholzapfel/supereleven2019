@@ -149,8 +149,6 @@ export class TeamPredictionService {
                     .from(Round, 'round')
                     .where('round.startDate <= :startdate', {startdate: startDatePreviousRound})
                     .getQuery();
-                this.logger.log('roundids 1');
-                this.logger.log(subQuery);
                 return 'prediction_round.id IN ' + subQuery;
             })
             .orderBy('teamPredictions.isActive', 'DESC')
@@ -165,7 +163,7 @@ export class TeamPredictionService {
                 }).map(tp => {
                     return {
                         ...tp,
-                        isActive : tp.isActive ? tp.isActive : tp.tillRound.id === nextRound.id,
+                        isActive: tp.isActive ? tp.isActive : tp.tillRound.id === nextRound.id,
                     };
                 }),
             };
@@ -405,6 +403,8 @@ export class TeamPredictionService {
             .andWhere('prediction.id = :predictionId', {predictionId})
             .getMany();
 
+        // this.logger.log('allpreviousplayers.length ' +  allPreviousPlayers.length);
+
         const nextRound = await this.roundService.getNextRound();
 
         const previousPlayers = allPreviousPlayers.filter(player => {
@@ -413,20 +413,46 @@ export class TeamPredictionService {
                     player.tillRound.id !== nextRound.id);
         });
 
+        // this.logger.log('previousPlayers.length ' +  previousPlayers.length);
+
         const idsCurrentActivePlayers = allPreviousPlayers.filter(player => {
             return (player.isActive &&
                 player.round.id !== nextRound.id) ||
                 (player.tillRound && player.tillRound.id === nextRound.id);
         });
 
-        this.logger.log(allPreviousPlayers);
+        // this.logger.log('idsCurrentActivePlayers.length ' +  idsCurrentActivePlayers.length);
+
+        previousPlayers.forEach(pp => {
+            const komtSpelerVakerVoor = previousPlayers.filter(p => p.teamPlayer.id === pp.teamPlayer.id);
+            if (komtSpelerVakerVoor && komtSpelerVakerVoor.length > 1) {
+                this.logger.log('ja speler komt vaker voor');
+                komtSpelerVakerVoor.forEach(epp => {
+                    const dubbeleSpeler = komtSpelerVakerVoor.filter(epp2 => epp.tillRound && epp2.round.id === epp.tillRound.id);
+                    if (dubbeleSpeler && dubbeleSpeler.length > 0) {
+                        this.logger.log('speler is dubbel');
+                        this.logger.log(dubbeleSpeler[0].teamPlayer.player.name);
+                    }
+                });
+            }
+        });
+
+        // this.logger.log(previousPlayers.map(p => {
+        //     return {
+        //         naam: p.teamPlayer.player.name,
+        //         captain: p.captain,
+        //         sindsRonde: p.round.name,
+        //         totRonde: p.tillRound ? p.tillRound.name : '',
+        //         captainTot: p.captainTillRound ? p.captainTillRound.name : ''
+        //     };
+        // }));
 
         const allCaptains = allPreviousPlayers.filter(player => {
             return player.captain ||
                 (!player.captain && !!player.captainTillRound && player.round.id !== player.captainTillRound.id);
         });
 
-        this.logger.log(allCaptains);
+        // this.logger.log(allCaptains);
 
         const previousCaptainId = allCaptains.length > 0 ?
             allCaptains.find(captain => captain.captainTillRound && captain.captainTillRound.id === nextRound.id) ?
@@ -500,7 +526,8 @@ export class TeamPredictionService {
                 : [...unique, item];
         }, []);
 
-        const existingPlayerThatBecomesCaptain = newCaptain ? allPreviousPlayers.find(player => player.teamPlayer.id === newCaptain.teamPlayer.id) : null;
+        const existingPlayerThatBecomesCaptain = newCaptain ?
+            allPreviousPlayers.find(player => player.teamPlayer.id === newCaptain.teamPlayer.id) : null;
 
         // get the id's of the previousactiveplayers that needs to be set to inactive.
         const idsToBeSetInActive = [...previousTeam
