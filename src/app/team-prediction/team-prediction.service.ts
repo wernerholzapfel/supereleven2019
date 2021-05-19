@@ -183,7 +183,8 @@ export class TeamPredictionService {
     }
 
     isCaptain(prediction, round: Round): boolean {
-        return (prediction.captain && !prediction.captainTillRound) || (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate);
+        return (prediction.captain && !prediction.captainTillRound) ||
+            (prediction.captainTillRound && prediction.captainTillRound.startDate > round.startDate);
     }
 
     public calculateStand(participants: any[]) {
@@ -403,8 +404,6 @@ export class TeamPredictionService {
             .andWhere('prediction.id = :predictionId', {predictionId})
             .getMany();
 
-        // this.logger.log('allpreviousplayers.length ' +  allPreviousPlayers.length);
-
         const nextRound = await this.roundService.getNextRound();
 
         const previousPlayers = allPreviousPlayers.filter(player => {
@@ -413,46 +412,16 @@ export class TeamPredictionService {
                     player.tillRound.id !== nextRound.id);
         });
 
-        // this.logger.log('previousPlayers.length ' +  previousPlayers.length);
-
         const idsCurrentActivePlayers = allPreviousPlayers.filter(player => {
             return (player.isActive &&
                 player.round.id !== nextRound.id) ||
                 (player.tillRound && player.tillRound.id === nextRound.id);
         });
 
-        // this.logger.log('idsCurrentActivePlayers.length ' +  idsCurrentActivePlayers.length);
-
-        previousPlayers.forEach(pp => {
-            const komtSpelerVakerVoor = previousPlayers.filter(p => p.teamPlayer.id === pp.teamPlayer.id);
-            if (komtSpelerVakerVoor && komtSpelerVakerVoor.length > 1) {
-                this.logger.log('ja speler komt vaker voor');
-                komtSpelerVakerVoor.forEach(epp => {
-                    const dubbeleSpeler = komtSpelerVakerVoor.filter(epp2 => epp.tillRound && epp2.round.id === epp.tillRound.id);
-                    if (dubbeleSpeler && dubbeleSpeler.length > 0) {
-                        this.logger.log('speler is dubbel');
-                        this.logger.log(dubbeleSpeler[0].teamPlayer.player.name);
-                    }
-                });
-            }
-        });
-
-        // this.logger.log(previousPlayers.map(p => {
-        //     return {
-        //         naam: p.teamPlayer.player.name,
-        //         captain: p.captain,
-        //         sindsRonde: p.round.name,
-        //         totRonde: p.tillRound ? p.tillRound.name : '',
-        //         captainTot: p.captainTillRound ? p.captainTillRound.name : ''
-        //     };
-        // }));
-
         const allCaptains = allPreviousPlayers.filter(player => {
             return player.captain ||
                 (!player.captain && !!player.captainTillRound && player.round.id !== player.captainTillRound.id);
         });
-
-        // this.logger.log(allCaptains);
 
         const previousCaptainId = allCaptains.length > 0 ?
             allCaptains.find(captain => captain.captainTillRound && captain.captainTillRound.id === nextRound.id) ?
