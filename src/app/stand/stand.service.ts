@@ -92,7 +92,7 @@ export class StandService {
                 totalTeamPoints: participant.totaalpunten,
                 totalRankingPoints: rankingStandMeenemen && rankingStand.length > 0 ? rankingStand.find(m => m.id === participant.id).totalPoints : 0,
                 totalMatchPoints: matchesStand.length > 0 ? matchesStand.find(m => m.id === participant.id).totalPoints : 0,
-                totalQuestionPoints: questionStand.length > 0 ? questionStand.find(q => q.id === participant.id).totalPoints : 0,
+                totalQuestionsPoints: questionStand.length > 0 ? questionStand.find(q => q.id === participant.id).totalPoints : 0,
             };
         })
             .map(participant => {
@@ -101,7 +101,7 @@ export class StandService {
                     totalPoints: participant.totalMatchPoints
                         + participant.totalTeamPoints
                         + participant.totalRankingPoints
-                        + participant.totalQuestionPoints,
+                        + participant.totalQuestionsPoints,
                 };
             })
             .sort((a, b) => {
